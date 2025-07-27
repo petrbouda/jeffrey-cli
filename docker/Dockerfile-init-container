@@ -1,0 +1,7 @@
+FROM eclipse-temurin:24-jdk
+
+RUN mkdir /app
+
+COPY src/InitContainerScript.java /app
+
+ENTRYPOINT ["java", "/app/InitContainerScript.java"]
