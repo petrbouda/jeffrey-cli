@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
-public class InitContainerScript {
+public class InitRepository {
     private static final DateTimeFormatter DATETIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss");
 
@@ -17,11 +17,12 @@ public class InitContainerScript {
             System.err.println("[ERROR] Repository folder is not provided");
             System.exit(1);
         }
-        if (args.length > 1) {
-            System.err.println("[ERROR] Too many arguments, only one is expected");
+        if (args.length > 2) {
+            System.err.println("[ERROR] Too many arguments, expected: <repository-folder> [--silent]");
             System.exit(1);
         }
 
+        boolean silent = args.length == 2 && "--silent".equals(args[1]);
         Path repositoryFolder = createDirectories(Path.of(args[0]));
         if (!repositoryFolder.toFile().exists()) {
             System.err.println("[ERROR] Cannot create parent directories: " + repositoryFolder);
@@ -31,8 +32,21 @@ public class InitContainerScript {
         try {
             Path newFolder = createNewProjectDir(repositoryFolder);
             Path envFile = createEnvFile(repositoryFolder, newFolder);
-            System.out.println(
-                    "Jeffrey directory and env file prepared: current-dir: " + newFolder + " env-file: " + envFile);
+            setEnvironmentVariables(repositoryFolder, newFolder);
+            if (!silent) {
+                System.out.printf(
+                        """
+                                Jeffrey directory and env file prepared:
+                                JEFFREY_REPOSITORY_DIR=%s
+                                JEFFREY_PROFILE_DIR=%s
+                                JEFFREY_PROFILE_FILE=%s
+                                ENV_FILE=%s%n""",
+                        System.getProperty("JEFFREY_REPOSITORY_DIR"),
+                        System.getProperty("JEFFREY_PROFILE_DIR"),
+                        System.getProperty("JEFFREY_PROFILE_FILE"),
+                        envFile
+                );
+            }
         } catch (Exception e) {
             System.err.println("[ERROR] Cannot create a new directory and env-file: " + repositoryFolder);
             System.exit(1);
@@ -63,6 +77,12 @@ public class InitContainerScript {
             System.exit(1);
             return null; // Unreachable, but required for compilation
         }
+    }
+
+    private static void setEnvironmentVariables(Path repositoryFolder, Path newFolder) {
+        System.setProperty("JEFFREY_REPOSITORY_DIR", repositoryFolder.toString());
+        System.setProperty("JEFFREY_PROFILE_DIR", newFolder.toString());
+        System.setProperty("JEFFREY_PROFILE_FILE", newFolder.resolve(DEFAULT_FILE_TEMPLATE).toString());
     }
 
     private static Path createDirectories(Path path) {
