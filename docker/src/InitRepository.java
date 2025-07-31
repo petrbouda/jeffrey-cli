@@ -11,10 +11,16 @@ public class InitRepository {
 
     private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
     private static final String ENV_FILE_NAME = ".env";
+    private static final String PROJECTS_DIR_NAME = "projects";
+    private static final String JEFFREY_DIR_PROP = "JEFFREY_DIR";
+    private static final String JEFFREY_PROJECTS_DIR_PROP = "JEFFREY_PROJECTS_DIR";
+    private static final String JEFFREY_SESSION_DIR_PROP = "JEFFREY_SESSION_DIR";
+    private static final String JEFFREY_FILE_PROP = "JEFFREY_FILE";
+    private static final String SILENT_FLAG = "--silent";
 
     public static void main(String[] args) {
         if (args.length == 0) {
-            System.err.println("[ERROR] Repository folder is not provided");
+            System.err.println("[ERROR] Jeffrey directory is not provided");
             System.exit(1);
         }
         if (args.length > 2) {
@@ -22,54 +28,63 @@ public class InitRepository {
             System.exit(1);
         }
 
-        boolean silent = args.length == 2 && "--silent".equals(args[1]);
-        Path repositoryFolder = createDirectories(Path.of(args[0]));
-        if (!repositoryFolder.toFile().exists()) {
-            System.err.println("[ERROR] Cannot create parent directories: " + repositoryFolder);
+        boolean silent = args.length == 2 && SILENT_FLAG.equals(args[1]);
+        Path jeffreyDir = createDirectories(Path.of(args[0]));
+        if (!jeffreyDir.toFile().exists()) {
+            System.err.println("[ERROR] Cannot create parent directories: " + jeffreyDir);
             System.exit(1);
         }
 
         try {
-            Path newFolder = createNewProjectDir(repositoryFolder);
-            Path envFile = createEnvFile(repositoryFolder, newFolder);
-            setEnvironmentVariables(repositoryFolder, newFolder);
+            Path projectsDir = createDirectories(jeffreyDir.resolve(PROJECTS_DIR_NAME));
+            Path newSessionDir = createNewSessionDir(jeffreyDir);
+            Path envFile = createEnvFile(jeffreyDir, projectsDir, newSessionDir);
+            setEnvironmentVariables(jeffreyDir, projectsDir, newSessionDir);
             if (!silent) {
-                System.out.printf(
-                        """
-                                Jeffrey directory and env file prepared:
-                                JEFFREY_REPOSITORY_DIR=%s
-                                JEFFREY_PROFILE_DIR=%s
-                                JEFFREY_PROFILE_FILE=%s
-                                ENV_FILE=%s%n""",
-                        System.getProperty("JEFFREY_REPOSITORY_DIR"),
-                        System.getProperty("JEFFREY_PROFILE_DIR"),
-                        System.getProperty("JEFFREY_PROFILE_FILE"),
+                String output = """
+                        Jeffrey directory and env file prepared:
+                        %s=%s
+                        %s=%s
+                        %s=%s
+                        %s=%s
+                        ENV_FILE=%s""".formatted(
+                        JEFFREY_DIR_PROP, System.getProperty(JEFFREY_DIR_PROP),
+                        JEFFREY_PROJECTS_DIR_PROP, System.getProperty(JEFFREY_PROJECTS_DIR_PROP),
+                        JEFFREY_SESSION_DIR_PROP, System.getProperty(JEFFREY_SESSION_DIR_PROP),
+                        JEFFREY_FILE_PROP, System.getProperty(JEFFREY_FILE_PROP),
                         envFile
                 );
+                System.out.println(output);
             }
         } catch (Exception e) {
-            System.err.println("[ERROR] Cannot create a new directory and env-file: " + repositoryFolder);
+            System.err.println("[ERROR] Cannot create a new directory and env-file: " + jeffreyDir + " error=" + e.getMessage());
             System.exit(1);
         }
     }
 
-    private static Path createNewProjectDir(Path repositoryFolder) {
+    private static Path createNewSessionDir(Path projectsDir) {
         Instant currenTimestamp = Instant.now();
-        String folderName = currenTimestamp.atZone(ZoneOffset.UTC).format(DATETIME_FORMATTER);
-        return createDirectories(repositoryFolder.resolve(folderName));
+        String sessionName = currenTimestamp.atZone(ZoneOffset.UTC).format(DATETIME_FORMATTER);
+        return createDirectories(projectsDir.resolve(sessionName));
     }
 
-    private static Path createEnvFile(Path repositoryFolder, Path newFolder) {
+    private static Path createEnvFile(Path jeffreyDir, Path projectsDir, Path sessionDir) {
         String content = """
-                export JEFFREY_REPOSITORY_DIR=%s
-                export JEFFREY_PROFILE_DIR=%s
-                export JEFFREY_PROFILE_FILE=%s
+                export %s=%s
+                export %s=%s
+                export %s=%s
+                export %s=%s
                 """.formatted(
-                repositoryFolder,
-                newFolder,
-                newFolder.resolve(DEFAULT_FILE_TEMPLATE));
+                JEFFREY_DIR_PROP,
+                JEFFREY_PROJECTS_DIR_PROP,
+                JEFFREY_SESSION_DIR_PROP,
+                JEFFREY_FILE_PROP,
+                jeffreyDir,
+                projectsDir,
+                sessionDir,
+                sessionDir.resolve(DEFAULT_FILE_TEMPLATE));
 
-        Path envFilePath = repositoryFolder.resolve(ENV_FILE_NAME);
+        Path envFilePath = projectsDir.resolve(ENV_FILE_NAME);
         try {
             return Files.writeString(envFilePath, content);
         } catch (IOException e) {
@@ -79,10 +94,11 @@ public class InitRepository {
         }
     }
 
-    private static void setEnvironmentVariables(Path repositoryFolder, Path newFolder) {
-        System.setProperty("JEFFREY_REPOSITORY_DIR", repositoryFolder.toString());
-        System.setProperty("JEFFREY_PROFILE_DIR", newFolder.toString());
-        System.setProperty("JEFFREY_PROFILE_FILE", newFolder.resolve(DEFAULT_FILE_TEMPLATE).toString());
+    private static void setEnvironmentVariables(Path jeffreyDir, Path projectsDir, Path sessionDir) {
+        System.setProperty(JEFFREY_DIR_PROP, jeffreyDir.toString());
+        System.setProperty(JEFFREY_PROJECTS_DIR_PROP, projectsDir.toString());
+        System.setProperty(JEFFREY_SESSION_DIR_PROP, sessionDir.toString());
+        System.setProperty(JEFFREY_FILE_PROP, sessionDir.resolve(DEFAULT_FILE_TEMPLATE).toString());
     }
 
     private static Path createDirectories(Path path) {
