@@ -11,9 +11,9 @@ public class InitRepository {
 
     private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
     private static final String ENV_FILE_NAME = ".env";
-    private static final String PROJECTS_DIR_NAME = "projects";
+    private static final String REPOSITORIES_DIR_NAME = "repositories";
     private static final String JEFFREY_DIR_PROP = "JEFFREY_DIR";
-    private static final String JEFFREY_PROJECTS_DIR_PROP = "JEFFREY_PROJECTS_DIR";
+    private static final String JEFFREY_REPOSITORIES_DIR_PROP = "JEFFREY_REPOSITORIES_DIR";
     private static final String JEFFREY_SESSION_DIR_PROP = "JEFFREY_SESSION_DIR";
     private static final String JEFFREY_FILE_PROP = "JEFFREY_FILE";
     private static final String SILENT_FLAG = "--silent";
@@ -36,10 +36,10 @@ public class InitRepository {
         }
 
         try {
-            Path projectsDir = createDirectories(jeffreyDir.resolve(PROJECTS_DIR_NAME));
-            Path newSessionDir = createNewSessionDir(jeffreyDir);
-            Path envFile = createEnvFile(jeffreyDir, projectsDir, newSessionDir);
-            setEnvironmentVariables(jeffreyDir, projectsDir, newSessionDir);
+            Path repositoriesDir = createDirectories(jeffreyDir.resolve(REPOSITORIES_DIR_NAME));
+            Path newSessionDir = createNewSessionDir(repositoriesDir);
+            Path envFile = createEnvFile(jeffreyDir, repositoriesDir, newSessionDir);
+            setEnvironmentVariables(jeffreyDir, repositoriesDir, newSessionDir);
             if (!silent) {
                 String output = """
                         Jeffrey directory and env file prepared:
@@ -49,7 +49,7 @@ public class InitRepository {
                         %s=%s
                         ENV_FILE=%s""".formatted(
                         JEFFREY_DIR_PROP, System.getProperty(JEFFREY_DIR_PROP),
-                        JEFFREY_PROJECTS_DIR_PROP, System.getProperty(JEFFREY_PROJECTS_DIR_PROP),
+                        JEFFREY_REPOSITORIES_DIR_PROP, System.getProperty(JEFFREY_REPOSITORIES_DIR_PROP),
                         JEFFREY_SESSION_DIR_PROP, System.getProperty(JEFFREY_SESSION_DIR_PROP),
                         JEFFREY_FILE_PROP, System.getProperty(JEFFREY_FILE_PROP),
                         envFile
@@ -62,13 +62,13 @@ public class InitRepository {
         }
     }
 
-    private static Path createNewSessionDir(Path projectsDir) {
+    private static Path createNewSessionDir(Path repositoriesDir) {
         Instant currenTimestamp = Instant.now();
         String sessionName = currenTimestamp.atZone(ZoneOffset.UTC).format(DATETIME_FORMATTER);
-        return createDirectories(projectsDir.resolve(sessionName));
+        return createDirectories(repositoriesDir.resolve(sessionName));
     }
 
-    private static Path createEnvFile(Path jeffreyDir, Path projectsDir, Path sessionDir) {
+    private static Path createEnvFile(Path jeffreyDir, Path repositoriesDir, Path sessionDir) {
         String content = """
                 export %s=%s
                 export %s=%s
@@ -76,15 +76,15 @@ public class InitRepository {
                 export %s=%s
                 """.formatted(
                 JEFFREY_DIR_PROP,
-                JEFFREY_PROJECTS_DIR_PROP,
+                JEFFREY_REPOSITORIES_DIR_PROP,
                 JEFFREY_SESSION_DIR_PROP,
                 JEFFREY_FILE_PROP,
                 jeffreyDir,
-                projectsDir,
+                repositoriesDir,
                 sessionDir,
                 sessionDir.resolve(DEFAULT_FILE_TEMPLATE));
 
-        Path envFilePath = projectsDir.resolve(ENV_FILE_NAME);
+        Path envFilePath = repositoriesDir.resolve(ENV_FILE_NAME);
         try {
             return Files.writeString(envFilePath, content);
         } catch (IOException e) {
@@ -94,9 +94,9 @@ public class InitRepository {
         }
     }
 
-    private static void setEnvironmentVariables(Path jeffreyDir, Path projectsDir, Path sessionDir) {
+    private static void setEnvironmentVariables(Path jeffreyDir, Path repositoriesDir, Path sessionDir) {
         System.setProperty(JEFFREY_DIR_PROP, jeffreyDir.toString());
-        System.setProperty(JEFFREY_PROJECTS_DIR_PROP, projectsDir.toString());
+        System.setProperty(JEFFREY_REPOSITORIES_DIR_PROP, repositoriesDir.toString());
         System.setProperty(JEFFREY_SESSION_DIR_PROP, sessionDir.toString());
         System.setProperty(JEFFREY_FILE_PROP, sessionDir.resolve(DEFAULT_FILE_TEMPLATE).toString());
     }
