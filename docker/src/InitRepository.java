@@ -122,23 +122,23 @@ public class InitRepository {
             for (String arg : args) {
                 if (arg.equals(SILENT_FLAG)) {
                     this.silent = true;
-                } else if (arg.startsWith("--jeffrey_home_dir=")) {
+                } else if (arg.startsWith("--jeffrey-home-dir=")) {
                     this.hasJeffreyHomeDir = true;
-                    this.jeffreyHomeDir = arg.substring("--jeffrey_home_dir=".length());
+                    this.jeffreyHomeDir = arg.substring("--jeffrey-home-dir=".length());
                     if (this.jeffreyHomeDir.isEmpty()) {
-                        System.err.println("[ERROR] --jeffrey_home_dir requires a value");
+                        System.err.println("[ERROR] --jeffrey-home-dir requires a value");
                         System.exit(1);
                     }
-                } else if (arg.startsWith("--repositories_dir=")) {
-                    this.repositoriesDir = arg.substring("--repositories_dir=".length());
+                } else if (arg.startsWith("--repositories-dir=")) {
+                    this.repositoriesDir = arg.substring("--repositories-dir=".length());
                     if (this.repositoriesDir.isEmpty()) {
-                        System.err.println("[ERROR] --repositories_dir requires a value");
+                        System.err.println("[ERROR] --repositories-dir requires a value");
                         System.exit(1);
                     }
-                } else if (arg.startsWith("--project_name=")) {
-                    this.projectName = arg.substring("--project_name=".length());
+                } else if (arg.startsWith("--project-name=")) {
+                    this.projectName = arg.substring("--project-name=".length());
                     if (this.projectName.isEmpty()) {
-                        System.err.println("[ERROR] --project_name requires a value");
+                        System.err.println("[ERROR] --project-name requires a value");
                         System.exit(1);
                     }
                 } else {
@@ -148,17 +148,17 @@ public class InitRepository {
             }
 
             if (projectName == null) {
-                System.err.println("[ERROR] --project_name is required");
+                System.err.println("[ERROR] --project-name is required");
                 System.exit(1);
             }
 
             if (!hasJeffreyHomeDir && repositoriesDir == null) {
-                System.err.println("[ERROR] Either --jeffrey_home_dir or --repositories_dir must be specified");
+                System.err.println("[ERROR] Either --jeffrey-home-dir or --repositories-dir must be specified");
                 System.exit(1);
             }
 
             if (hasJeffreyHomeDir && repositoriesDir != null) {
-                System.err.println("[ERROR] Cannot specify both --jeffrey_home_dir and --repositories_dir");
+                System.err.println("[ERROR] Cannot specify both --jeffrey-home-dir and --repositories-dir");
                 System.exit(1);
             }
         }
