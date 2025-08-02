@@ -24,82 +24,82 @@ public class InitCommand implements Runnable {
     private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
     private static final String ENV_FILE_NAME = ".env";
     private static final String REPOSITORIES_DIR_NAME = "repositories";
-    private static final String JEFFREY_HOME_DIR_PROP = "JEFFREY_HOME_DIR";
-    private static final String JEFFREY_REPOSITORIES_DIR_PROP = "JEFFREY_REPOSITORIES_DIR";
-    private static final String JEFFREY_SESSION_DIR_PROP = "JEFFREY_CURRENT_SESSION_DIR";
-    private static final String JEFFREY_PROJECT_DIR_PROP = "JEFFREY_CURRENT_PROJECT_DIR";
+    private static final String JEFFREY_HOME_PROP = "JEFFREY_HOME";
+    private static final String JEFFREY_REPOSITORIES_PROP = "JEFFREY_REPOSITORIES";
+    private static final String JEFFREY_SESSION_PROP = "JEFFREY_CURRENT_SESSION";
+    private static final String JEFFREY_PROJECT_PROP = "JEFFREY_CURRENT_PROJECT";
     private static final String JEFFREY_FILE_PROP = "JEFFREY_FILE";
 
     @Option(names = {"--silent"}, description = "Suppress output. Only create the variable without printing the output for sourcing.")
     private boolean silent = false;
 
-    @Option(names = {"--jeffrey-home-dir"}, description = "Jeffrey HOME directory path. Automatically creates repositories dir in Jeffrey home (Otherwise, repositories-dir must be provided).")
-    private String jeffreyHomeDir;
+    @Option(names = {"--jeffrey-home"}, description = "Jeffrey HOME directory path. Automatically creates repositories directory in Jeffrey home (Otherwise, --repositories must be provided).")
+    private String jeffreyHomePath;
 
-    @Option(names = {"--repositories-dir"}, description = "Repositories directory path. It's taken as a directory for storing projects' sessions data (Otherwise, jeffrey-home-dir must be provided).")
-    private String repositoriesDir;
+    @Option(names = {"--repositories"}, description = "Repositories directory path. It's taken as a directory for storing projects' sessions data (Otherwise, --jeffrey-home must be provided).")
+    private String repositoriesPath;
 
-    @Option(names = {"--project-name"}, description = "Project name", required = true)
+    @Option(names = {"--project"}, description = "Project that will be used to a new generate directories for repository and a new session", required = true)
     private String projectName;
 
     @Override
     public void run() {
         validateArguments();
 
-        boolean useJeffreyHomeDir = jeffreyHomeDir != null;
+        boolean useJeffreyHome = jeffreyHomePath != null;
         
-        Path jeffreyDir;
-        Path repositoriesDirPath;
+        Path jeffreyHome;
+        Path repositoriesPath;
 
-        if (useJeffreyHomeDir) {
-            jeffreyDir = createDirectories(Path.of(jeffreyHomeDir));
-            repositoriesDirPath = createDirectories(jeffreyDir.resolve(REPOSITORIES_DIR_NAME));
+        if (useJeffreyHome) {
+            jeffreyHome = createDirectories(Path.of(this.jeffreyHomePath));
+            repositoriesPath = createDirectories(jeffreyHome.resolve(REPOSITORIES_DIR_NAME));
         } else {
-            repositoriesDirPath = createDirectories(Path.of(repositoriesDir));
-            jeffreyDir = null; // Will not be used when repositories_dir is specified
+            repositoriesPath = createDirectories(Path.of(this.repositoriesPath));
+            jeffreyHome = null; // Will not be used when repositories_dir is specified
         }
 
-        if (!repositoriesDirPath.toFile().exists()) {
-            System.err.println("[ERROR] Cannot create parent directories: " + repositoriesDirPath);
+        if (!repositoriesPath.toFile().exists()) {
+            System.err.println("[ERROR] Cannot create parent directories: " + repositoriesPath);
             System.exit(1);
         }
 
         try {
-            Path projectDir = createDirectories(repositoriesDirPath.resolve(projectName));
-            Path newSessionDir = createNewSessionDir(projectDir);
-            String variables = variables(jeffreyDir, repositoriesDirPath, projectDir, newSessionDir, useJeffreyHomeDir);
-            Path envFile = createEnvFile(projectDir, variables);
+            Path projectPath = createDirectories(repositoriesPath.resolve(projectName));
+            Path newSessionPath = createNewSessionPath(projectPath);
+            String variables = variables(jeffreyHome, repositoriesPath, projectPath, newSessionPath, useJeffreyHome);
+            Path envFile = createEnvFile(projectPath, variables);
             if (!silent) {
                 System.out.println("# ENV file to with variables to source: ");
                 System.out.println("# " + envFile);
                 System.out.println(Files.readString(envFile));
             }
         } catch (Exception e) {
-            System.err.println("[ERROR] Cannot create a new directory and env-file: " + repositoriesDirPath + " error=" + e.getMessage());
+            System.err.println("[ERROR] Cannot create a new directory and env-file: " + repositoriesPath + " error=" + e.getMessage());
             System.exit(1);
         }
     }
 
     private void validateArguments() {
-        if (jeffreyHomeDir == null && repositoriesDir == null) {
-            System.err.println("[ERROR] Either --jeffrey-home-dir or --repositories-dir must be specified");
+        if (jeffreyHomePath == null && repositoriesPath == null) {
+            System.err.println("[ERROR] Either --jeffrey-home or --repositories must be specified");
             System.exit(1);
         }
 
-        if (jeffreyHomeDir != null && repositoriesDir != null) {
-            System.err.println("[ERROR] Cannot specify both --jeffrey-home-dir and --repositories-dir");
+        if (jeffreyHomePath != null && repositoriesPath != null) {
+            System.err.println("[ERROR] Cannot specify both --jeffrey-home and --repositories");
             System.exit(1);
         }
     }
 
-    private static Path createNewSessionDir(Path projectDir) {
+    private static Path createNewSessionPath(Path projectPath) {
         Instant currentTimestamp = Instant.now();
         String sessionName = currentTimestamp.atZone(ZoneOffset.UTC).format(DATETIME_FORMATTER);
-        return createDirectories(projectDir.resolve(sessionName));
+        return createDirectories(projectPath.resolve(sessionName));
     }
 
-    private static Path createEnvFile(Path projectDir, String variables) {
-        Path envFilePath = projectDir.resolve(ENV_FILE_NAME);
+    private static Path createEnvFile(Path projectPath, String variables) {
+        Path envFilePath = projectPath.resolve(ENV_FILE_NAME);
         try {
             return Files.writeString(envFilePath, variables);
         } catch (IOException e) {
@@ -110,16 +110,16 @@ public class InitCommand implements Runnable {
     }
 
     private static String variables(
-            Path jeffreyDir, Path repositoriesDir, Path projectDir, Path sessionDir, boolean useJeffreyHomeDir) {
+            Path jeffreyHome, Path repositoriesPath, Path projectPath, Path sessionPath, boolean useJeffreyHome) {
 
         String output = "";
-        if (useJeffreyHomeDir) {
-            output += var(JEFFREY_HOME_DIR_PROP, jeffreyDir);
+        if (useJeffreyHome) {
+            output += var(JEFFREY_HOME_PROP, jeffreyHome);
         }
-        output += var(JEFFREY_REPOSITORIES_DIR_PROP, repositoriesDir);
-        output += var(JEFFREY_PROJECT_DIR_PROP, projectDir);
-        output += var(JEFFREY_SESSION_DIR_PROP, sessionDir);
-        output += var(JEFFREY_FILE_PROP, sessionDir.resolve(DEFAULT_FILE_TEMPLATE), false);
+        output += var(JEFFREY_REPOSITORIES_PROP, repositoriesPath);
+        output += var(JEFFREY_PROJECT_PROP, projectPath);
+        output += var(JEFFREY_SESSION_PROP, sessionPath);
+        output += var(JEFFREY_FILE_PROP, sessionPath.resolve(DEFAULT_FILE_TEMPLATE), false);
         return output;
     }
 
