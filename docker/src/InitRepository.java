@@ -49,7 +49,7 @@ public class InitRepository {
             Path projectDir = createDirectories(repositoriesDir.resolve(parser.getProjectName()));
             Path newSessionDir = createNewSessionDir(projectDir);
             String variables = variables(jeffreyDir, repositoriesDir, projectDir, newSessionDir, useJeffreyHomeDir);
-            Path envFile = createEnvFile(repositoriesDir, variables);
+            Path envFile = createEnvFile(projectDir, variables);
             if (!silent) {
                 System.out.println("ENV file to with variables to source: ");
                 System.out.println(envFile);
@@ -68,8 +68,8 @@ public class InitRepository {
         return createDirectories(repositoriesDir.resolve(sessionName));
     }
 
-    private static Path createEnvFile(Path repositoriesDir, String variables) {
-        Path envFilePath = repositoriesDir.resolve(ENV_FILE_NAME);
+    private static Path createEnvFile(Path projectDir, String variables) {
+        Path envFilePath = projectDir.resolve(ENV_FILE_NAME);
         try {
             return Files.writeString(envFilePath, variables);
         } catch (IOException e) {
