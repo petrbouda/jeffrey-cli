@@ -12,7 +12,7 @@ public class InitRepository {
     private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
     private static final String ENV_FILE_NAME = ".env";
     private static final String REPOSITORIES_DIR_NAME = "repositories";
-    private static final String JEFFREY_DIR_PROP = "JEFFREY_DIR";
+    private static final String JEFFREY_HOME_DIR_PROP = "JEFFREY_HOME_DIR";
     private static final String JEFFREY_REPOSITORIES_DIR_PROP = "JEFFREY_REPOSITORIES_DIR";
     private static final String JEFFREY_SESSION_DIR_PROP = "JEFFREY_SESSION_DIR";
     private static final String JEFFREY_FILE_PROP = "JEFFREY_FILE";
@@ -48,7 +48,7 @@ public class InitRepository {
                         %s=%s
                         %s=%s
                         ENV_FILE=%s""".formatted(
-                        JEFFREY_DIR_PROP, System.getProperty(JEFFREY_DIR_PROP),
+                        JEFFREY_HOME_DIR_PROP, System.getProperty(JEFFREY_HOME_DIR_PROP),
                         JEFFREY_REPOSITORIES_DIR_PROP, System.getProperty(JEFFREY_REPOSITORIES_DIR_PROP),
                         JEFFREY_SESSION_DIR_PROP, System.getProperty(JEFFREY_SESSION_DIR_PROP),
                         JEFFREY_FILE_PROP, System.getProperty(JEFFREY_FILE_PROP),
@@ -75,7 +75,7 @@ public class InitRepository {
                 export %s=%s
                 export %s=%s
                 """.formatted(
-                JEFFREY_DIR_PROP,
+                JEFFREY_HOME_DIR_PROP,
                 JEFFREY_REPOSITORIES_DIR_PROP,
                 JEFFREY_SESSION_DIR_PROP,
                 JEFFREY_FILE_PROP,
@@ -95,7 +95,7 @@ public class InitRepository {
     }
 
     private static void setEnvironmentVariables(Path jeffreyDir, Path repositoriesDir, Path sessionDir) {
-        System.setProperty(JEFFREY_DIR_PROP, jeffreyDir.toString());
+        System.setProperty(JEFFREY_HOME_DIR_PROP, jeffreyDir.toString());
         System.setProperty(JEFFREY_REPOSITORIES_DIR_PROP, repositoriesDir.toString());
         System.setProperty(JEFFREY_SESSION_DIR_PROP, sessionDir.toString());
         System.setProperty(JEFFREY_FILE_PROP, sessionDir.resolve(DEFAULT_FILE_TEMPLATE).toString());
