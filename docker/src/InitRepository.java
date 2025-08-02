@@ -14,50 +14,50 @@ public class InitRepository {
     private static final String REPOSITORIES_DIR_NAME = "repositories";
     private static final String JEFFREY_HOME_DIR_PROP = "JEFFREY_HOME_DIR";
     private static final String JEFFREY_REPOSITORIES_DIR_PROP = "JEFFREY_REPOSITORIES_DIR";
-    private static final String JEFFREY_SESSION_DIR_PROP = "JEFFREY_SESSION_DIR";
+    private static final String JEFFREY_SESSION_DIR_PROP = "JEFFREY_CURRENT_SESSION_DIR";
+    private static final String JEFFREY_PROJECT_DIR_PROP = "JEFFREY_CURRENT_PROJECT_DIR";
     private static final String JEFFREY_FILE_PROP = "JEFFREY_FILE";
     private static final String SILENT_FLAG = "--silent";
 
     public static void main(String[] args) {
         if (args.length == 0) {
-            System.err.println("[ERROR] Jeffrey directory is not provided");
-            System.exit(1);
-        }
-        if (args.length > 2) {
-            System.err.println("[ERROR] Too many arguments, expected: <repository-folder> [--silent]");
+            System.err.println("[ERROR] Arguments not provided");
             System.exit(1);
         }
 
-        boolean silent = args.length == 2 && SILENT_FLAG.equals(args[1]);
-        Path jeffreyDir = createDirectories(Path.of(args[0]));
-        if (!jeffreyDir.toFile().exists()) {
-            System.err.println("[ERROR] Cannot create parent directories: " + jeffreyDir);
+        ArgumentParser parser = new ArgumentParser(args);
+        boolean silent = parser.isSilent();
+        boolean useJeffreyHomeDir = parser.hasJeffreyHomeDir();
+
+        Path jeffreyDir;
+        Path repositoriesDir;
+
+        if (useJeffreyHomeDir) {
+            jeffreyDir = createDirectories(Path.of(parser.getJeffreyHomeDir()));
+            repositoriesDir = createDirectories(jeffreyDir.resolve(REPOSITORIES_DIR_NAME));
+        } else {
+            repositoriesDir = createDirectories(Path.of(parser.getRepositoriesDir()));
+            jeffreyDir = null; // Will not be used when repositories_dir is specified
+        }
+
+        if (!repositoriesDir.toFile().exists()) {
+            System.err.println("[ERROR] Cannot create parent directories: " + repositoriesDir);
             System.exit(1);
         }
 
         try {
-            Path repositoriesDir = createDirectories(jeffreyDir.resolve(REPOSITORIES_DIR_NAME));
-            Path newSessionDir = createNewSessionDir(repositoriesDir);
-            Path envFile = createEnvFile(jeffreyDir, repositoriesDir, newSessionDir);
-            setEnvironmentVariables(jeffreyDir, repositoriesDir, newSessionDir);
+            Path projectDir = createDirectories(repositoriesDir.resolve(parser.getProjectName()));
+            Path newSessionDir = createNewSessionDir(projectDir);
+            String variables = variables(jeffreyDir, repositoriesDir, projectDir, newSessionDir, useJeffreyHomeDir);
+            Path envFile = createEnvFile(repositoriesDir, variables);
             if (!silent) {
-                String output = """
-                        Jeffrey directory and env file prepared:
-                        %s=%s
-                        %s=%s
-                        %s=%s
-                        %s=%s
-                        ENV_FILE=%s""".formatted(
-                        JEFFREY_HOME_DIR_PROP, System.getProperty(JEFFREY_HOME_DIR_PROP),
-                        JEFFREY_REPOSITORIES_DIR_PROP, System.getProperty(JEFFREY_REPOSITORIES_DIR_PROP),
-                        JEFFREY_SESSION_DIR_PROP, System.getProperty(JEFFREY_SESSION_DIR_PROP),
-                        JEFFREY_FILE_PROP, System.getProperty(JEFFREY_FILE_PROP),
-                        envFile
-                );
-                System.out.println(output);
+                System.out.println("ENV file to with variables to source: ");
+                System.out.println(envFile);
+                System.out.println("Content of the ENV file:");
+                System.out.println(Files.readString(envFile));
             }
         } catch (Exception e) {
-            System.err.println("[ERROR] Cannot create a new directory and env-file: " + jeffreyDir + " error=" + e.getMessage());
+            System.err.println("[ERROR] Cannot create a new directory and env-file: " + repositoriesDir + " error=" + e.getMessage());
             System.exit(1);
         }
     }
@@ -68,25 +68,10 @@ public class InitRepository {
         return createDirectories(repositoriesDir.resolve(sessionName));
     }
 
-    private static Path createEnvFile(Path jeffreyDir, Path repositoriesDir, Path sessionDir) {
-        String content = """
-                export %s=%s
-                export %s=%s
-                export %s=%s
-                export %s=%s
-                """.formatted(
-                JEFFREY_HOME_DIR_PROP,
-                JEFFREY_REPOSITORIES_DIR_PROP,
-                JEFFREY_SESSION_DIR_PROP,
-                JEFFREY_FILE_PROP,
-                jeffreyDir,
-                repositoriesDir,
-                sessionDir,
-                sessionDir.resolve(DEFAULT_FILE_TEMPLATE));
-
+    private static Path createEnvFile(Path repositoriesDir, String variables) {
         Path envFilePath = repositoriesDir.resolve(ENV_FILE_NAME);
         try {
-            return Files.writeString(envFilePath, content);
+            return Files.writeString(envFilePath, variables);
         } catch (IOException e) {
             System.err.println("[ERROR] Cannot create an ENV file: path=" + envFilePath + " error=" + e.getMessage());
             System.exit(1);
@@ -94,11 +79,22 @@ public class InitRepository {
         }
     }
 
-    private static void setEnvironmentVariables(Path jeffreyDir, Path repositoriesDir, Path sessionDir) {
-        System.setProperty(JEFFREY_HOME_DIR_PROP, jeffreyDir.toString());
-        System.setProperty(JEFFREY_REPOSITORIES_DIR_PROP, repositoriesDir.toString());
-        System.setProperty(JEFFREY_SESSION_DIR_PROP, sessionDir.toString());
-        System.setProperty(JEFFREY_FILE_PROP, sessionDir.resolve(DEFAULT_FILE_TEMPLATE).toString());
+    private static String variables(
+            Path jeffreyDir, Path repositoriesDir, Path projectDir, Path sessionDir, boolean useJeffreyHomeDir) {
+
+        String output = "";
+        if (useJeffreyHomeDir) {
+            output += var(JEFFREY_HOME_DIR_PROP, jeffreyDir);
+        }
+        output += var(JEFFREY_REPOSITORIES_DIR_PROP, repositoriesDir);
+        output += var(JEFFREY_PROJECT_DIR_PROP, projectDir);
+        output += var(JEFFREY_SESSION_DIR_PROP, sessionDir);
+        output += var(JEFFREY_FILE_PROP, sessionDir.resolve(DEFAULT_FILE_TEMPLATE));
+        return output;
+    }
+
+    private static String var(String name, Path value) {
+        return "export " + name + "=" + value + "\n";
     }
 
     private static Path createDirectories(Path path) {
@@ -108,6 +104,83 @@ public class InitRepository {
             System.err.println("[ERROR] Cannot create a parent directories: " + path + " error=" + e.getMessage());
             System.exit(1);
             return null; // Unreachable, but required for compilation
+        }
+    }
+
+    private static class ArgumentParser {
+        private boolean silent = false;
+        private boolean hasJeffreyHomeDir = false;
+        private String jeffreyHomeDir;
+        private String repositoriesDir;
+        private String projectName;
+
+        public ArgumentParser(String[] args) {
+            parseArguments(args);
+        }
+
+        private void parseArguments(String[] args) {
+            for (String arg : args) {
+                if (arg.equals(SILENT_FLAG)) {
+                    this.silent = true;
+                } else if (arg.startsWith("--jeffrey_home_dir=")) {
+                    this.hasJeffreyHomeDir = true;
+                    this.jeffreyHomeDir = arg.substring("--jeffrey_home_dir=".length());
+                    if (this.jeffreyHomeDir.isEmpty()) {
+                        System.err.println("[ERROR] --jeffrey_home_dir requires a value");
+                        System.exit(1);
+                    }
+                } else if (arg.startsWith("--repositories_dir=")) {
+                    this.repositoriesDir = arg.substring("--repositories_dir=".length());
+                    if (this.repositoriesDir.isEmpty()) {
+                        System.err.println("[ERROR] --repositories_dir requires a value");
+                        System.exit(1);
+                    }
+                } else if (arg.startsWith("--project_name=")) {
+                    this.projectName = arg.substring("--project_name=".length());
+                    if (this.projectName.isEmpty()) {
+                        System.err.println("[ERROR] --project_name requires a value");
+                        System.exit(1);
+                    }
+                } else {
+                    System.err.println("[ERROR] Unknown argument: " + arg);
+                    System.exit(1);
+                }
+            }
+
+            if (projectName == null) {
+                System.err.println("[ERROR] --project_name is required");
+                System.exit(1);
+            }
+
+            if (!hasJeffreyHomeDir && repositoriesDir == null) {
+                System.err.println("[ERROR] Either --jeffrey_home_dir or --repositories_dir must be specified");
+                System.exit(1);
+            }
+
+            if (hasJeffreyHomeDir && repositoriesDir != null) {
+                System.err.println("[ERROR] Cannot specify both --jeffrey_home_dir and --repositories_dir");
+                System.exit(1);
+            }
+        }
+
+        public boolean isSilent() {
+            return silent;
+        }
+
+        public boolean hasJeffreyHomeDir() {
+            return hasJeffreyHomeDir;
+        }
+
+        public String getJeffreyHomeDir() {
+            return jeffreyHomeDir;
+        }
+
+        public String getRepositoriesDir() {
+            return repositoriesDir;
+        }
+
+        public String getProjectName() {
+            return projectName;
         }
     }
 }
