@@ -15,4 +15,4 @@ RUN mkdir /app
 
 COPY --from=builder /sources/jeffrey-cli/target/jeffrey-cli.jar /app/
 
-ENTRYPOINT ["java", "-jar", "/app/jeffrey-cli.jar"]
+ENTRYPOINT ["java", "-jar", "/app/jeffrey-cli.jar", "init"]
