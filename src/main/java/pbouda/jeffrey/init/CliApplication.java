@@ -10,8 +10,8 @@ import picocli.CommandLine.Command;
                 InitCommand.class,
         },
         mixinStandardHelpOptions = true,
-        version = "Jeffrey CLI 0.1",
-        description = "Jeffrey CLI Application to simplify the setup and maintenance"
+        description = "Jeffrey CLI Application to simplify the setup and maintenance",
+        versionProvider = VersionProvider.class
 )
 public class CliApplication {
 
