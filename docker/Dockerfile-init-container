@@ -1,7 +1,18 @@
-FROM eclipse-temurin:24-jdk
+# Builder stage
+FROM petrbouda/jeffrey-builder:24 AS builder
+
+RUN apt -y install git
+
+RUN mkdir /sources
+
+RUN git clone https://github.com/petrbouda/jeffrey-cli.git /sources/jeffrey-cli \
+    && mvn clean package -f /sources/jeffrey-cli/pom.xml
+
+# Runtime stage
+FROM eclipse-temurin:24-jre
 
 RUN mkdir /app
 
-COPY docker/src/InitRepository.java /app
+COPY --from=builder /sources/jeffrey-cli/target/jeffrey-cli.jar /app/
 
-ENTRYPOINT ["java", "/app/InitRepository.java"]
+ENTRYPOINT ["java", "-jar", "/app/jeffrey-cli.jar"]
