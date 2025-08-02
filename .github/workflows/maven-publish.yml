@@ -3,14 +3,14 @@ on:
     tags:
       - '*'
 
-name: Create Jeffrey Artifact
+name: Create Jeffrey CLI Artifact
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
     container:
-      image: eclipse-temurin:21
+      image: petrbouda/jeffrey-builder
 
     permissions: write-all
 
