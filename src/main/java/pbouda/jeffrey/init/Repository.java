@@ -55,7 +55,7 @@ public class Repository {
         }
     }
 
-    public void addProject(String projectId, String projectName, List<ProjectAttribute> attributes) {
+    public void addProject(String projectId, String projectName, Path projectPath, List<ProjectAttribute> attributes) {
         JsonNode attributesJson = Json.toTree(attributes);
         long createdAt = clock.millis();
 
@@ -74,6 +74,7 @@ public class Repository {
                 ObjectNode eventContent = Json.createObject()
                         .put("project_id", projectId)
                         .put("project_name", projectName)
+                        .put("project_path", projectPath.toString())
                         .set("attributes", attributesJson);
 
                 eventStmt.setString(1, projectId);
@@ -92,13 +93,14 @@ public class Repository {
         }
     }
 
-    public void addSession(String projectId, String sessionId) {
+    public void addSession(String projectId, String sessionId, Path newSessionPath) {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(INSERT_EVENT)) {
 
             ObjectNode eventContent = Json.createObject()
                     .put("project_id", projectId)
-                    .put("session_id", sessionId);
+                    .put("session_id", sessionId)
+                    .put("session_path", newSessionPath.toString());
 
             stmt.setString(1, projectId);
             stmt.setLong(2, clock.millis());

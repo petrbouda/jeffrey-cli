@@ -97,11 +97,11 @@ public class InitCommand implements Runnable {
 
             // Add project if it doesn't exist
             if (!repository.projectExists(projectId)) {
-                repository.addProject(projectId, projectName, projectAttributes);
+                repository.addProject(projectId, projectName, projectPath, projectAttributes);
             }
 
             // Add session
-            repository.addSession(projectId, sessionId);
+            repository.addSession(projectId, sessionId, newSessionPath);
 
             String variables = variables(
                     jeffreyHome,
