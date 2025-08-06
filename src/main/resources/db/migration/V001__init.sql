@@ -24,11 +24,12 @@ CREATE TABLE IF NOT EXISTS main.workspace_projects
     attributes   TEXT    NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS main.workspace_events
+CREATE TABLE IF NOT EXISTS main.workspace_sessions
 (
-    event_id   INTEGER PRIMARY KEY,
-    project_id TEXT    NOT NULL,
-    created_at INTEGER NOT NULL,
-    event_type TEXT    NOT NULL,
-    content    TEXT    NOT NULL
+    session_id           TEXT    PRIMARY KEY,
+    project_id           TEXT    PRIMARY KEY,
+    session_path         TEXT    NOT NULL,
+    created_at           INTEGER NOT NULL,
+    latest_detected_file TEXT
 );
+

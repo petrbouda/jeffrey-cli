@@ -26,8 +26,8 @@ public class Repository {
             VALUES (?, ?, ?, ?)
             """;
 
-    private static final String INSERT_EVENT = """
-            INSERT INTO workspace_events (project_id, created_at, event_type, content)
+    private static final String INSERT_SESSION = """
+            INSERT INTO workspace_sessions (session_id, project_id, session_path, created_at)
             VALUES (?, ?, ?, ?)
             """;
 
@@ -59,35 +59,15 @@ public class Repository {
         JsonNode attributesJson = Json.toTree(attributes);
         long createdAt = clock.millis();
 
-        try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(false);
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement projectStmt = conn.prepareStatement(INSERT_PROJECT)) {
 
-            try (PreparedStatement projectStmt = conn.prepareStatement(INSERT_PROJECT);
-                 PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
+            projectStmt.setString(1, projectId);
+            projectStmt.setString(2, projectName);
+            projectStmt.setLong(3, createdAt);
+            projectStmt.setString(4, attributesJson.toString());
+            projectStmt.executeUpdate();
 
-                projectStmt.setString(1, projectId);
-                projectStmt.setString(2, projectName);
-                projectStmt.setLong(3, createdAt);
-                projectStmt.setString(4, attributesJson.toString());
-                projectStmt.executeUpdate();
-
-                ObjectNode eventContent = Json.createObject()
-                        .put("project_id", projectId)
-                        .put("project_name", projectName)
-                        .put("project_path", projectPath.toString())
-                        .set("attributes", attributesJson);
-
-                eventStmt.setString(1, projectId);
-                eventStmt.setLong(2, createdAt);
-                eventStmt.setString(3, EventType.PROJECT_CREATED.name());
-                eventStmt.setString(4, Json.toPrettyString(eventContent));
-                eventStmt.executeUpdate();
-
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to add project: " + projectId, e);
         }
@@ -95,17 +75,12 @@ public class Repository {
 
     public void addSession(String projectId, String sessionId, Path newSessionPath) {
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(INSERT_EVENT)) {
+             PreparedStatement stmt = conn.prepareStatement(INSERT_SESSION)) {
 
-            ObjectNode eventContent = Json.createObject()
-                    .put("project_id", projectId)
-                    .put("session_id", sessionId)
-                    .put("session_path", newSessionPath.toString());
-
-            stmt.setString(1, projectId);
-            stmt.setLong(2, clock.millis());
-            stmt.setString(3, EventType.SESSION_CREATED.name());
-            stmt.setString(4, eventContent.toString());
+            stmt.setString(1, sessionId);
+            stmt.setString(2, projectId);
+            stmt.setString(3, newSessionPath.toString());
+            stmt.setLong(4, clock.millis());
             stmt.executeUpdate();
 
         } catch (SQLException e) {
