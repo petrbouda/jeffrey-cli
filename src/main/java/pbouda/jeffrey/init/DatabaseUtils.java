@@ -49,6 +49,7 @@ public abstract class DatabaseUtils {
                 .locations("classpath:db/migration")
                 .sqlMigrationPrefix("V")
                 .sqlMigrationSeparator("__")
+                .loggers()
                 .load();
 
         flyway.migrate();

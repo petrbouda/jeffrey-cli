@@ -16,29 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-CREATE TABLE IF NOT EXISTS main.workspace_projects
-(
-    project_id   TEXT    PRIMARY KEY,
-    project_name TEXT    NOT NULL,
-    created_at   INTEGER NOT NULL,
-    attributes   TEXT    NOT NULL
-);
+package pbouda.jeffrey.init.model;
 
-CREATE TABLE IF NOT EXISTS main.workspace_sessions
-(
-    session_id           TEXT    NOT NULL,
-    project_id           TEXT    NOT NULL,
-    session_path         TEXT    NOT NULL,
-    created_at           INTEGER NOT NULL,
-    PRIMARY KEY (project_id, session_id)
-);
+import picocli.CommandLine;
 
-CREATE TABLE IF NOT EXISTS main.workspace_events
-(
-    event_id   INTEGER PRIMARY KEY,
-    project_id TEXT    NOT NULL,
-    created_at INTEGER NOT NULL,
-    event_type TEXT    NOT NULL,
-    content    TEXT    NOT NULL
-);
+public class RepositoryTypeConverter implements CommandLine.ITypeConverter<RepositoryType> {
 
+    @Override
+    public RepositoryType convert(String value) {
+        try {
+            return RepositoryType.resolve(value);
+        } catch (IllegalArgumentException e) {
+            throw new CommandLine.TypeConversionException(e.getMessage());
+        }
+    }
+}

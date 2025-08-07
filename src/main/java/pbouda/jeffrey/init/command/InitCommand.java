@@ -2,6 +2,8 @@ package pbouda.jeffrey.init.command;
 
 import pbouda.jeffrey.init.Repository;
 import pbouda.jeffrey.init.model.ProjectAttribute;
+import pbouda.jeffrey.init.model.RepositoryType;
+import pbouda.jeffrey.init.model.RepositoryTypeConverter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -16,7 +18,7 @@ import java.util.List;
 
 @Command(
         name = InitCommand.COMMAND_NAME,
-        description = "Initialize Jeffrey project structure and generate environment variables for sourcing.",
+        description = "Initialize Jeffrey project and current session. Creates a ENV file with variables to source in the shell.",
         mixinStandardHelpOptions = true)
 public class InitCommand implements Runnable {
 
@@ -58,6 +60,9 @@ public class InitCommand implements Runnable {
     @Option(names = {"--attribute"}, description = "Key-value pair attributes delimited by slash ('/') to be added to the project. Can be specified multiple times.")
     private String[] attributes;
 
+    @Option(names = {"--repository-type"}, description = "Type of repository for the project (ASPROF or JDK)", required = true, converter = RepositoryTypeConverter.class)
+    private RepositoryType repositoryType;
+
     @Override
     public void run() {
         validateArguments();
@@ -88,8 +93,7 @@ public class InitCommand implements Runnable {
             Path newSessionPath = projectPath.resolve(sessionId);
 
             // Initialize repository and manage project/session data
-            Path dbPath = workspacePath.resolve("workspace.db");
-            Repository repository = new Repository(dbPath, CLOCK);
+            Repository repository = new Repository(workspacePath, CLOCK);
             repository.initialize();
 
             // Parse attributes
@@ -97,11 +101,11 @@ public class InitCommand implements Runnable {
 
             // Add project if it doesn't exist
             if (!repository.projectExists(projectId)) {
-                repository.addProject(projectId, projectName, projectPath, projectAttributes);
+                repository.addProject(projectId, projectName, projectPath, repositoryType, projectAttributes);
             }
 
             // Add session
-            repository.addSession(projectId, sessionId, newSessionPath);
+            repository.addSession(projectId, sessionId, repositoryType, newSessionPath);
 
             String variables = variables(
                     jeffreyHome,
