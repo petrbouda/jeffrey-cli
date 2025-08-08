@@ -18,53 +18,13 @@
 
 package pbouda.jeffrey.init;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ext.NioPathDeserializer;
-import com.fasterxml.jackson.databind.ext.NioPathSerializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
 
 public abstract class Json {
-
-    private static final TypeReference<ArrayList<String>> STRING_LIST_TYPE =
-            new TypeReference<ArrayList<String>>() {
-            };
-
-    private static final SimpleModule CUSTOM_PATH_SERDE = new SimpleModule("PathSerde")
-            .addSerializer(Path.class, new NioPathSerializer())
-            .addDeserializer(Path.class, new NioPathDeserializer());
-
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .registerModule(CUSTOM_PATH_SERDE)
-            .registerModule(new JavaTimeModule());
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static JsonNode toTree(Object content) {
         return MAPPER.valueToTree(content);
-    }
-
-    public static String toPrettyString(Object obj) {
-        try {
-            return MAPPER
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static ObjectNode createObject() {
-        return MAPPER.createObjectNode();
-    }
-
-    public static ArrayNode createArray() {
-        return MAPPER.createArrayNode();
     }
 }

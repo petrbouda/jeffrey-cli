@@ -1,9 +1,6 @@
 package pbouda.jeffrey.init;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import pbouda.jeffrey.init.model.EventType;
-import pbouda.jeffrey.init.model.ProjectAttribute;
 import pbouda.jeffrey.init.model.RepositoryType;
 
 import javax.sql.DataSource;
@@ -15,6 +12,7 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public class Repository {
 
@@ -71,15 +69,17 @@ public class Repository {
             String projectName,
             Path projectPath,
             RepositoryType repositoryType,
-            List<ProjectAttribute> attributes) {
+            Map<String, String> attributes) {
         JsonNode attributesJson = Json.toTree(attributes);
         long createdAt = clock.millis();
 
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
 
-            try (PreparedStatement projectStmt = conn.prepareStatement(INSERT_PROJECT);
-                 PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
+            try (
+                    PreparedStatement projectStmt = conn.prepareStatement(INSERT_PROJECT);
+//                    PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)
+            ) {
 
                 projectStmt.setString(1, projectId);
                 projectStmt.setString(2, projectName);
@@ -87,18 +87,18 @@ public class Repository {
                 projectStmt.setString(4, attributesJson.toString());
                 projectStmt.executeUpdate();
 
-                ObjectNode eventContent = Json.createObject()
-                        .put("project_id", projectId)
-                        .put("project_name", projectName)
-                        .put("project_path", projectPath.toString())
-                        .put("repository_type", repositoryType.name())
-                        .set("attributes", attributesJson);
-
-                eventStmt.setString(1, projectId);
-                eventStmt.setLong(2, createdAt);
-                eventStmt.setString(3, EventType.PROJECT_CREATED.name());
-                eventStmt.setString(4, eventContent.toString());
-                eventStmt.executeUpdate();
+//                ObjectNode eventContent = Json.createObject()
+//                        .put("project_id", projectId)
+//                        .put("project_name", projectName)
+//                        .put("project_path", projectPath.toString())
+//                        .put("repository_type", repositoryType.name())
+//                        .set("attributes", attributesJson);
+//
+//                eventStmt.setString(1, projectId);
+//                eventStmt.setLong(2, createdAt);
+//                eventStmt.setString(3, EventType.PROJECT_CREATED.name());
+//                eventStmt.setString(4, eventContent.toString());
+//                eventStmt.executeUpdate();
 
                 conn.commit();
             } catch (SQLException e) {
@@ -116,8 +116,10 @@ public class Repository {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
 
-            try (PreparedStatement sessionStmt = conn.prepareStatement(INSERT_SESSION);
-                 PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
+            try (
+                    PreparedStatement sessionStmt = conn.prepareStatement(INSERT_SESSION);
+//                    PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)
+            ) {
 
                 sessionStmt.setString(1, sessionId);
                 sessionStmt.setString(2, projectId);
@@ -125,18 +127,18 @@ public class Repository {
                 sessionStmt.setLong(4, createdAt.toEpochMilli());
                 sessionStmt.executeUpdate();
 
-                ObjectNode eventContent = Json.createObject()
-                        .put("project_id", projectId)
-                        .put("session_id", sessionId)
-                        .put("created_at", createdAt.toString())
-                        .put("session_path", newSessionPath.toString())
-                        .put("repository_type", repositoryType.name());
-
-                eventStmt.setString(1, projectId);
-                eventStmt.setLong(2, createdAt.toEpochMilli());
-                eventStmt.setString(3, EventType.SESSION_CREATED.name());
-                eventStmt.setString(4, eventContent.toString());
-                eventStmt.executeUpdate();
+//                ObjectNode eventContent = Json.createObject()
+//                        .put("project_id", projectId)
+//                        .put("session_id", sessionId)
+//                        .put("created_at", createdAt.toString())
+//                        .put("session_path", newSessionPath.toString())
+//                        .put("repository_type", repositoryType.name());
+//
+//                eventStmt.setString(1, projectId);
+//                eventStmt.setLong(2, createdAt.toEpochMilli());
+//                eventStmt.setString(3, EventType.SESSION_CREATED.name());
+//                eventStmt.setString(4, eventContent.toString());
+//                eventStmt.executeUpdate();
 
                 conn.commit();
             } catch (SQLException e) {

@@ -1,7 +1,6 @@
 package pbouda.jeffrey.init.command;
 
 import pbouda.jeffrey.init.Repository;
-import pbouda.jeffrey.init.model.ProjectAttribute;
 import pbouda.jeffrey.init.model.RepositoryType;
 import pbouda.jeffrey.init.model.RepositoryTypeConverter;
 import picocli.CommandLine.Command;
@@ -13,8 +12,8 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Command(
         name = InitCommand.COMMAND_NAME,
@@ -97,7 +96,7 @@ public class InitCommand implements Runnable {
             repository.initialize();
 
             // Parse attributes
-            List<ProjectAttribute> projectAttributes = parseAttributes(attributes);
+            Map<String, String> projectAttributes = parseAttributes(attributes);
 
             // Add project if it doesn't exist
             if (!repository.projectExists(projectId)) {
@@ -188,19 +187,19 @@ public class InitCommand implements Runnable {
         }
     }
 
-    private static List<ProjectAttribute> parseAttributes(String[] attributes) {
-        List<ProjectAttribute> result = new ArrayList<>();
-        if (attributes != null) {
-            for (String attribute : attributes) {
+    private static Map<String, String> parseAttributes(String[] keyValuePairs) {
+        Map<String, String> attributes = new HashMap<>();
+        if (keyValuePairs != null) {
+            for (String attribute : keyValuePairs) {
                 String[] parts = attribute.split("/", 2);
                 if (parts.length == 2) {
-                    result.add(new ProjectAttribute(parts[0], parts[1]));
+                    attributes.put(parts[0], parts[1]);
                 } else {
                     System.err.println("[WARNING] Invalid attribute format: " + attribute + " (expected: key/value)");
                 }
             }
         }
-        return result;
+        return attributes;
     }
 
     private static String generateSessionId() {
