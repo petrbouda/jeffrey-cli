@@ -16,29 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-CREATE TABLE IF NOT EXISTS main.workspace_projects
-(
-    project_id   TEXT    PRIMARY KEY,
-    project_name TEXT    NOT NULL,
-    created_at   INTEGER NOT NULL,
-    attributes   TEXT    NOT NULL
-);
+package pbouda.jeffrey.init;
 
-CREATE TABLE IF NOT EXISTS main.workspace_sessions
-(
-    session_id           TEXT    NOT NULL,
-    project_id           TEXT    NOT NULL,
-    session_path         TEXT    NOT NULL,
-    created_at           INTEGER NOT NULL,
-    PRIMARY KEY (project_id, session_id)
-);
+import com.github.f4b6a3.uuid.UuidCreator;
 
-CREATE TABLE IF NOT EXISTS main.workspace_events
-(
-    event_id   TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL,
-    event_type TEXT NOT NULL,
-    content    TEXT NOT NULL
-    created_at INTEGER NOT NULL,
-);
+public abstract class IDGenerator {
 
+    /**
+     * UUID generator described here:
+     * <a href="https://github.com/f4b6a3/uuid-creator/wiki/1.7.-UUIDv7#type-2-plus-1">...</a>
+     *
+     * @return UUID represented as a string
+     */
+    public static String generate() {
+        return UuidCreator.getTimeOrderedEpochPlus1().toString();
+    }
+}

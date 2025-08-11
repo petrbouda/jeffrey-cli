@@ -1,6 +1,8 @@
 package pbouda.jeffrey.init;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import pbouda.jeffrey.init.model.EventType;
 import pbouda.jeffrey.init.model.RepositoryType;
 
 import javax.sql.DataSource;
@@ -10,8 +12,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 
 public class Repository {
@@ -35,8 +35,8 @@ public class Repository {
             """;
 
     private static final String INSERT_EVENT = """
-            INSERT INTO workspace_events (project_id, created_at, event_type, content)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO workspace_events (event_id, project_id, event_type, content, created_at)
+            VALUES (?, ?, ?, ?, ?)
             """;
 
     private final DataSource dataSource;
@@ -71,15 +71,14 @@ public class Repository {
             RepositoryType repositoryType,
             Map<String, String> attributes) {
         JsonNode attributesJson = Json.toTree(attributes);
-        long createdAt = clock.millis();
+        long createdAt = clock.instant()
+                .toEpochMilli();
 
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
 
-            try (
-                    PreparedStatement projectStmt = conn.prepareStatement(INSERT_PROJECT);
-//                    PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)
-            ) {
+            try (PreparedStatement projectStmt = conn.prepareStatement(INSERT_PROJECT);
+                 PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
 
                 projectStmt.setString(1, projectId);
                 projectStmt.setString(2, projectName);
@@ -87,18 +86,19 @@ public class Repository {
                 projectStmt.setString(4, attributesJson.toString());
                 projectStmt.executeUpdate();
 
-//                ObjectNode eventContent = Json.createObject()
-//                        .put("project_id", projectId)
-//                        .put("project_name", projectName)
-//                        .put("project_path", projectPath.toString())
-//                        .put("repository_type", repositoryType.name())
-//                        .set("attributes", attributesJson);
-//
-//                eventStmt.setString(1, projectId);
-//                eventStmt.setLong(2, createdAt);
-//                eventStmt.setString(3, EventType.PROJECT_CREATED.name());
-//                eventStmt.setString(4, eventContent.toString());
-//                eventStmt.executeUpdate();
+                ObjectNode eventContent = Json.createObject()
+                        .put("project_id", projectId)
+                        .put("project_name", projectName)
+                        .put("project_path", projectPath.toString())
+                        .put("repository_type", repositoryType.name())
+                        .set("attributes", attributesJson);
+
+                eventStmt.setString(1, IDGenerator.generate());
+                eventStmt.setString(2, projectId);
+                eventStmt.setString(3, EventType.PROJECT_CREATED.name());
+                eventStmt.setString(4, eventContent.toString());
+                eventStmt.setLong(5, createdAt);
+                eventStmt.executeUpdate();
 
                 conn.commit();
             } catch (SQLException e) {
@@ -111,34 +111,34 @@ public class Repository {
     }
 
     public void addSession(String projectId, String sessionId, RepositoryType repositoryType, Path newSessionPath) {
-        Instant createdAt = clock.instant();
+        long createdAt = clock.instant()
+                .toEpochMilli();
 
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
 
-            try (
-                    PreparedStatement sessionStmt = conn.prepareStatement(INSERT_SESSION);
-//                    PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)
-            ) {
+            try (PreparedStatement sessionStmt = conn.prepareStatement(INSERT_SESSION);
+                 PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
 
                 sessionStmt.setString(1, sessionId);
                 sessionStmt.setString(2, projectId);
                 sessionStmt.setString(3, newSessionPath.toString());
-                sessionStmt.setLong(4, createdAt.toEpochMilli());
+                sessionStmt.setLong(4, createdAt);
                 sessionStmt.executeUpdate();
 
-//                ObjectNode eventContent = Json.createObject()
-//                        .put("project_id", projectId)
-//                        .put("session_id", sessionId)
-//                        .put("created_at", createdAt.toString())
-//                        .put("session_path", newSessionPath.toString())
-//                        .put("repository_type", repositoryType.name());
-//
-//                eventStmt.setString(1, projectId);
-//                eventStmt.setLong(2, createdAt.toEpochMilli());
-//                eventStmt.setString(3, EventType.SESSION_CREATED.name());
-//                eventStmt.setString(4, eventContent.toString());
-//                eventStmt.executeUpdate();
+                ObjectNode eventContent = Json.createObject()
+                        .put("project_id", projectId)
+                        .put("session_id", sessionId)
+                        .put("created_at", createdAt)
+                        .put("session_path", newSessionPath.toString())
+                        .put("repository_type", repositoryType.name());
+
+                eventStmt.setString(1, IDGenerator.generate());
+                eventStmt.setString(2, projectId);
+                eventStmt.setString(3, EventType.SESSION_CREATED.name());
+                eventStmt.setString(4, eventContent.toString());
+                eventStmt.setLong(5, createdAt);
+                eventStmt.executeUpdate();
 
                 conn.commit();
             } catch (SQLException e) {

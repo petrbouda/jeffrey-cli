@@ -14,6 +14,7 @@
         <sqlite.version>3.50.3.0</sqlite.version>
         <flyway.version>11.10.5</flyway.version>
         <jackson.version>2.19.2</jackson.version>
+        <uuid-creator.version>6.1.1</uuid-creator.version>
 
         <mainClass>pbouda.jeffrey.init.CliApplication</mainClass>
         <finalName>jeffrey-cli</finalName>
@@ -39,6 +40,11 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.f4b6a3</groupId>
+            <artifactId>uuid-creator</artifactId>
+            <version>${uuid-creator.version}</version>
         </dependency>
     </dependencies>
 

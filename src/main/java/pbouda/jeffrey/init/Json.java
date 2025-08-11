@@ -20,11 +20,16 @@ package pbouda.jeffrey.init;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public abstract class Json {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static JsonNode toTree(Object content) {
         return MAPPER.valueToTree(content);
+    }
+
+    public static ObjectNode createObject() {
+        return MAPPER.createObjectNode();
     }
 }
