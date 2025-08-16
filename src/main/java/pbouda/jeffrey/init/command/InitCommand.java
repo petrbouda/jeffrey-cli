@@ -105,7 +105,7 @@ public class InitCommand implements Runnable {
             }
 
             String sessionId = generateSessionId();
-            Path newSessionPath = projectPath.resolve(sessionId);
+            Path newSessionPath = createDirectories(projectPath.resolve(sessionId));
 
             // Add session
             repository.addSession(
