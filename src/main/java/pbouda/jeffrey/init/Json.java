@@ -18,12 +18,25 @@
 
 package pbouda.jeffrey.init;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ext.NioPathDeserializer;
+import com.fasterxml.jackson.databind.ext.NioPathSerializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.nio.file.Path;
 
 public abstract class Json {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final SimpleModule CUSTOM_PATH_SERDE = new SimpleModule("PathSerde")
+            .addSerializer(Path.class, new NioPathSerializer())
+            .addDeserializer(Path.class, new NioPathDeserializer());
+
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .registerModule(CUSTOM_PATH_SERDE)
+            .registerModule(new JavaTimeModule());
 
     public static JsonNode toTree(Object content) {
         return MAPPER.valueToTree(content);
@@ -31,5 +44,13 @@ public abstract class Json {
 
     public static ObjectNode createObject() {
         return MAPPER.createObjectNode();
+    }
+
+    public static String toString(Object obj) {
+        try {
+            return MAPPER.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

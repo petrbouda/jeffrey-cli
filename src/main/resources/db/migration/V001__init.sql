@@ -15,30 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-CREATE TABLE IF NOT EXISTS main.workspace_projects
-(
-    project_id   TEXT    PRIMARY KEY,
-    project_name TEXT    NOT NULL,
-    created_at   INTEGER NOT NULL,
-    attributes   TEXT    NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS main.workspace_sessions
-(
-    session_id           TEXT    NOT NULL,
-    project_id           TEXT    NOT NULL,
-    session_path         TEXT    NOT NULL,
-    created_at           INTEGER NOT NULL,
-    PRIMARY KEY (project_id, session_id)
-);
-
 CREATE TABLE IF NOT EXISTS main.workspace_events
 (
-    event_id   TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL,
-    event_type TEXT NOT NULL,
-    content    TEXT NOT NULL
-    created_at INTEGER NOT NULL,
+    event_id     TEXT PRIMARY KEY,
+    project_id   TEXT NOT NULL,
+    workspace_id TEXT NOT NULL,
+    event_type   TEXT NOT NULL,
+    content      TEXT NOT NULL,
+    created_at   INTEGER NOT NULL
 );
 

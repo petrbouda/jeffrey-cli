@@ -45,7 +45,7 @@ public class InitCommand implements Runnable {
     private String jeffreyHomePath;
 
     @Option(names = {"--workspaces-dir"}, description = "Workspaces directory path. It's taken as a directory for storing projects' sessions data (Otherwise, --jeffrey-home must be provided).")
-    private String workspacesPath;
+    private String workspacesDir;
 
     @Option(names = {"--workspace"}, description = "Workspace name, where the project belongs to.", required = true)
     private String workspace;
@@ -75,8 +75,8 @@ public class InitCommand implements Runnable {
             jeffreyHome = createDirectories(Path.of(this.jeffreyHomePath));
             workspacesPath = createDirectories(jeffreyHome.resolve(WORKSPACES_DIR_NAME));
         } else {
-            workspacesPath = createDirectories(Path.of(this.workspacesPath));
-            jeffreyHome = null; // Will not be used when repositories_dir is specified
+            workspacesPath = createDirectories(Path.of(this.workspacesDir));
+            jeffreyHome = null; // Will not be used when workspacesPath is specified
         }
 
         if (!workspacesPath.toFile().exists()) {
@@ -86,25 +86,34 @@ public class InitCommand implements Runnable {
 
         try {
             Path workspacePath = createDirectories(workspacesPath.resolve(workspace));
-            Path projectPath = createDirectories(workspacePath.resolve(projectId));
-
-            String sessionId = generateSessionId();
-            Path newSessionPath = projectPath.resolve(sessionId);
 
             // Initialize repository and manage project/session data
             Repository repository = new Repository(workspacePath, CLOCK);
             repository.initialize();
 
-            // Parse attributes
-            Map<String, String> projectAttributes = parseAttributes(attributes);
+            Path projectPath = workspacePath.resolve(projectId);
 
-            // Add project if it doesn't exist
-            if (!repository.projectExists(projectId)) {
-                repository.addProject(projectId, projectName, projectPath, repositoryType, projectAttributes);
+            if (Files.exists(projectPath) && !Files.isDirectory(projectPath)) {
+                System.err.println("[ERROR] Project path already exists and is not a directory: " + projectPath);
+                System.exit(1);
             }
 
+            if (!Files.exists(projectPath)) {
+                // Add project if it doesn't exist
+                repository.addProject(projectId, projectName, workspace, repositoryType, parseAttributes(attributes));
+                createDirectories(projectPath);
+            }
+
+            String sessionId = generateSessionId();
+            Path newSessionPath = projectPath.resolve(sessionId);
+
             // Add session
-            repository.addSession(projectId, sessionId, repositoryType, newSessionPath);
+            repository.addSession(
+                    projectId,
+                    sessionId,
+                    workspace,
+                    newSessionPath,
+                    workspacesPath);
 
             String variables = variables(
                     jeffreyHome,
@@ -127,12 +136,12 @@ public class InitCommand implements Runnable {
     }
 
     private void validateArguments() {
-        if (jeffreyHomePath == null && workspacesPath == null) {
+        if (jeffreyHomePath == null && workspacesDir == null) {
             System.err.println("[ERROR] Either --jeffrey-home or --workspaces must be specified");
             System.exit(1);
         }
 
-        if (jeffreyHomePath != null && workspacesPath != null) {
+        if (jeffreyHomePath != null && workspacesDir != null) {
             System.err.println("[ERROR] Cannot specify both --jeffrey-home and --workspaces");
             System.exit(1);
         }
