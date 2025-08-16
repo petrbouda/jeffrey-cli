@@ -47,8 +47,8 @@ public class InitCommand implements Runnable {
     @Option(names = {"--workspaces-dir"}, description = "Workspaces directory path. It's taken as a directory for storing projects' sessions data (Otherwise, --jeffrey-home must be provided).")
     private String workspacesDir;
 
-    @Option(names = {"--workspace"}, description = "Workspace name, where the project belongs to.", required = true)
-    private String workspace;
+    @Option(names = {"--workspace-id"}, description = "Workspace ID, where the project belongs to.", required = true)
+    private String workspaceId;
 
     @Option(names = {"--project-id"}, description = "Project ID should be a unique identifier for the given project to know that a deployment belongs to the particular service", required = true)
     private String projectId;
@@ -85,7 +85,7 @@ public class InitCommand implements Runnable {
         }
 
         try {
-            Path workspacePath = createDirectories(workspacesPath.resolve(workspace));
+            Path workspacePath = createDirectories(workspacesPath.resolve(workspaceId));
 
             // Initialize repository and manage project/session data
             Repository repository = new Repository(workspacePath, CLOCK);
@@ -100,7 +100,7 @@ public class InitCommand implements Runnable {
 
             if (!Files.exists(projectPath)) {
                 // Add project if it doesn't exist
-                repository.addProject(projectId, projectName, workspace, repositoryType, parseAttributes(attributes));
+                repository.addProject(projectId, projectName, workspaceId, repositoryType, parseAttributes(attributes));
                 createDirectories(projectPath);
             }
 
@@ -111,7 +111,7 @@ public class InitCommand implements Runnable {
             repository.addSession(
                     projectId,
                     sessionId,
-                    workspace,
+                    workspaceId,
                     newSessionPath,
                     workspacesPath);
 
