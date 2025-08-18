@@ -112,8 +112,9 @@ public class InitCommand implements Runnable {
                     projectId,
                     sessionId,
                     workspaceId,
-                    newSessionPath,
-                    workspacesPath);
+                    workspacePath.relativize(newSessionPath),
+                    workspacesPath,
+                    useJeffreyHome);
 
             String variables = variables(
                     jeffreyHome,
