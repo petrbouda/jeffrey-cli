@@ -113,8 +113,7 @@ public class InitCommand implements Runnable {
                     sessionId,
                     workspaceId,
                     workspacePath.relativize(newSessionPath),
-                    workspacesPath,
-                    useJeffreyHome);
+                    useJeffreyHome ? null : workspacesPath);
 
             String variables = variables(
                     jeffreyHome,

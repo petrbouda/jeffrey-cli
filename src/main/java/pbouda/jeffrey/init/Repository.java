@@ -57,12 +57,11 @@ public class Repository {
             String sessionId,
             String workspaceId,
             Path sessionRelativePath,
-            Path workspacesPath,
-            boolean useJeffreyHome) {
+            Path workspacesPath) {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
             SessionCreatedEvent event = new SessionCreatedEvent(
-                    sessionId, sessionRelativePath, useJeffreyHome ? null : workspacesPath);
+                    sessionId, sessionRelativePath.toString(), workspacesPath.toString());
 
             execute(eventStmt, EventType.SESSION_CREATED, projectId, workspaceId, Json.toString(event), clock);
         } catch (SQLException e) {
