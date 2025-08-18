@@ -61,7 +61,7 @@ public class Repository {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement eventStmt = conn.prepareStatement(INSERT_EVENT)) {
             SessionCreatedEvent event = new SessionCreatedEvent(
-                    sessionId, sessionRelativePath.toString(), workspacesPath.toString());
+                    sessionId, sessionRelativePath.toString(), workspacesPath != null ? workspacesPath.toString() : null);
 
             execute(eventStmt, EventType.SESSION_CREATED, projectId, workspaceId, Json.toString(event), clock);
         } catch (SQLException e) {
