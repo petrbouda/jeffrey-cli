@@ -17,7 +17,7 @@
  */
 CREATE TABLE IF NOT EXISTS main.workspace_events
 (
-    order_id     INTEGER PRIMARY KEY,
+    order_id     INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id     TEXT NOT NULL,
     project_id   TEXT NOT NULL,
     workspace_id TEXT NOT NULL,
