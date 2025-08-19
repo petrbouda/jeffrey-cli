@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -25,10 +26,13 @@ public class InitCommand implements Runnable {
 
     public static final String COMMAND_NAME = "init";
 
-    private static final DateTimeFormatter DATETIME_FORMATTER =
+    private static final DateTimeFormatter SESSION_DATETIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss");
 
-    private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
+    private static final DateTimeFormatter ASPROF_FILE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+
+    private static final String DEFAULT_FILE_TEMPLATE = "profile-%s.jfr";
     private static final String ENV_FILE_NAME = ".env";
     private static final String WORKSPACES_DIR_NAME = "workspaces";
     private static final String JEFFREY_HOME_PROP = "JEFFREY_HOME";
@@ -36,7 +40,7 @@ public class InitCommand implements Runnable {
     private static final String JEFFREY_WORKSPACE_PROP = "JEFFREY_CURRENT_WORKSPACE";
     private static final String JEFFREY_SESSION_PROP = "JEFFREY_CURRENT_SESSION";
     private static final String JEFFREY_PROJECT_PROP = "JEFFREY_CURRENT_PROJECT";
-    private static final String JEFFREY_FILE_PATTERN_PROP = "JEFFREY_FILE_PATTERN";
+    private static final String JEFFREY_FILE = "JEFFREY_FILE";
 
     @Option(names = {"--silent"}, description = "Suppress output. Only create the variable without printing the output for sourcing.")
     private boolean silent = false;
@@ -174,7 +178,7 @@ public class InitCommand implements Runnable {
         output += var(JEFFREY_WORKSPACE_PROP, workspacePath);
         output += var(JEFFREY_PROJECT_PROP, projectPath);
         output += var(JEFFREY_SESSION_PROP, sessionPath);
-        output += var(JEFFREY_FILE_PATTERN_PROP, sessionPath.resolve(DEFAULT_FILE_TEMPLATE), false);
+        output += var(JEFFREY_FILE, sessionPath.resolve(generateAsprofFileName()), false);
         return output;
     }
 
@@ -212,6 +216,11 @@ public class InitCommand implements Runnable {
     }
 
     private static String generateSessionId() {
-        return CLOCK.instant().atZone(ZoneOffset.UTC).format(DATETIME_FORMATTER);
+        return CLOCK.instant().atZone(ZoneOffset.UTC).format(SESSION_DATETIME_FORMATTER);
+    }
+
+    private static String generateAsprofFileName() {
+        String formattedTime = CLOCK.instant().atZone(ZoneOffset.UTC).format(ASPROF_FILE_FORMATTER);
+        return DEFAULT_FILE_TEMPLATE.formatted(formattedTime);
     }
 }
