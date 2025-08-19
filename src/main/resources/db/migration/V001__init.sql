@@ -17,7 +17,8 @@
  */
 CREATE TABLE IF NOT EXISTS main.workspace_events
 (
-    event_id     TEXT PRIMARY KEY,
+    order_id     INTEGER PRIMARY KEY,
+    event_id     TEXT NOT NULL,
     project_id   TEXT NOT NULL,
     workspace_id TEXT NOT NULL,
     event_type   TEXT NOT NULL,
