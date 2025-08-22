@@ -1,6 +1,6 @@
 package pbouda.jeffrey.init.command;
 
-import pbouda.jeffrey.init.Repository;
+import pbouda.jeffrey.init.FileSystemRepository;
 import pbouda.jeffrey.init.model.RepositoryType;
 import pbouda.jeffrey.init.model.RepositoryTypeConverter;
 import picocli.CommandLine.Command;
@@ -87,9 +87,8 @@ public class InitCommand implements Runnable {
         try {
             Path workspacePath = createDirectories(workspacesPath.resolve(workspaceId));
 
-            // Initialize repository and manage project/session data
-            Repository repository = new Repository(workspacePath, CLOCK);
-            repository.initialize();
+            // Initialize filesystem repository for managing project/session data
+            FileSystemRepository repository = new FileSystemRepository(CLOCK);
 
             Path projectPath = workspacePath.resolve(projectId);
 
@@ -100,8 +99,8 @@ public class InitCommand implements Runnable {
 
             if (!Files.exists(projectPath)) {
                 // Add project if it doesn't exist
-                repository.addProject(projectId, projectName, workspaceId, repositoryType, parseAttributes(attributes));
                 createDirectories(projectPath);
+                repository.addProject(projectId, projectName, workspaceId, repositoryType, parseAttributes(attributes), projectPath);
             }
 
             String sessionId = generateSessionId();
@@ -113,7 +112,8 @@ public class InitCommand implements Runnable {
                     sessionId,
                     workspaceId,
                     workspacePath.relativize(newSessionPath),
-                    useJeffreyHome ? null : workspacesPath);
+                    useJeffreyHome ? null : workspacesPath,
+                    newSessionPath);
 
             String variables = variables(
                     jeffreyHome,
