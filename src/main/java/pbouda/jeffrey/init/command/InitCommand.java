@@ -1,6 +1,8 @@
 package pbouda.jeffrey.init.command;
 
 import pbouda.jeffrey.init.FileSystemRepository;
+import pbouda.jeffrey.init.IDGenerator;
+import pbouda.jeffrey.init.model.ProjectCreatedEvent;
 import pbouda.jeffrey.init.model.RepositoryType;
 import pbouda.jeffrey.init.model.RepositoryTypeConverter;
 import picocli.CommandLine.Command;
@@ -10,10 +12,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Command(
         name = InitCommand.COMMAND_NAME,
@@ -25,12 +26,10 @@ public class InitCommand implements Runnable {
 
     public static final String COMMAND_NAME = "init";
 
-    private static final DateTimeFormatter DATETIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss");
-
     private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
     private static final String ENV_FILE_NAME = ".env";
     private static final String WORKSPACES_DIR_NAME = "workspaces";
+    private static final String PROJECT_INFO_FILENAME = ".project-info.json";
     private static final String JEFFREY_HOME_PROP = "JEFFREY_HOME";
     private static final String JEFFREY_WORKSPACES_PROP = "JEFFREY_WORKSPACES";
     private static final String JEFFREY_WORKSPACE_PROP = "JEFFREY_CURRENT_WORKSPACE";
@@ -50,11 +49,11 @@ public class InitCommand implements Runnable {
     @Option(names = {"--workspace-id"}, description = "Workspace ID, where the project belongs to.", required = true)
     private String workspaceId;
 
-    @Option(names = {"--project-id"}, description = "Project ID should be a unique identifier for the given project to know that a deployment belongs to the particular service", required = true)
-    private String projectId;
-
-    @Option(names = {"--project-name"}, description = "Human-readable name of the project", required = true)
+    @Option(names = {"--project-name"}, description = "Project Name should be a unique identifier for the given project to know that a deployment belongs to the particular service", required = true)
     private String projectName;
+
+    @Option(names = {"--project-label"}, description = "Human-readable label of the project", required = true)
+    private String projectLabel;
 
     @Option(names = {"--attribute"}, description = "Key-value pair attributes delimited by slash ('/') to be added to the project. Can be specified multiple times.")
     private String[] attributes;
@@ -90,26 +89,42 @@ public class InitCommand implements Runnable {
             // Initialize filesystem repository for managing project/session data
             FileSystemRepository repository = new FileSystemRepository(CLOCK);
 
-            Path projectPath = workspacePath.resolve(projectId);
+            // Find existing project by name
+            Optional<ProjectCreatedEvent> existingProject = repository.findProject(projectName, workspacePath);
 
-            if (Files.exists(projectPath) && !Files.isDirectory(projectPath)) {
-                System.err.println("[ERROR] Project path already exists and is not a directory: " + projectPath);
-                System.exit(1);
-            }
+            String projectId;
+            Path projectPath;
 
-            if (!Files.exists(projectPath)) {
-                // Add project if it doesn't exist
+            if (existingProject.isPresent()) {
+                // Use existing project
+                ProjectCreatedEvent project = existingProject.get();
+                projectId = project.projectId();
+
+                // Find the project directory by iterating through workspace directories
+                projectPath = workspacePath.resolve(projectId);
+            } else {
+                // Create new project
+                projectId = IDGenerator.generate();
+                projectPath = workspacePath.resolve(projectId);
+
+                if (Files.exists(projectPath) && !Files.isDirectory(projectPath)) {
+                    System.err.println("[ERROR] Project path already exists and is not a directory: " + projectPath);
+                    System.exit(1);
+                }
+
                 createDirectories(projectPath);
-                repository.addProject(projectId, projectName, workspaceId, repositoryType, parseAttributes(attributes), projectPath);
+                repository.addProject(
+                        projectId, projectName, projectLabel, workspaceId,
+                        repositoryType, parseAttributes(attributes), projectPath);
             }
 
-            String sessionId = generateSessionId();
+            String sessionId = IDGenerator.generate();
             Path newSessionPath = createDirectories(projectPath.resolve(sessionId));
 
             // Add session
             repository.addSession(
-                    projectId,
                     sessionId,
+                    projectId,
                     workspaceId,
                     workspacePath.relativize(newSessionPath),
                     useJeffreyHome ? null : workspacesPath,
@@ -143,6 +158,11 @@ public class InitCommand implements Runnable {
 
         if (jeffreyHomePath != null && workspacesDir != null) {
             System.err.println("[ERROR] Cannot specify both --jeffrey-home and --workspaces");
+            System.exit(1);
+        }
+
+        if (projectName != null && !projectName.matches("^[a-zA-Z0-9_-]+$")) {
+            System.err.println("[ERROR] Project name can only contain alphanumeric characters, underscores, and dashes");
             System.exit(1);
         }
     }
@@ -209,9 +229,5 @@ public class InitCommand implements Runnable {
             }
         }
         return attributes;
-    }
-
-    private static String generateSessionId() {
-        return CLOCK.instant().atZone(ZoneOffset.UTC).format(DATETIME_FORMATTER);
     }
 }

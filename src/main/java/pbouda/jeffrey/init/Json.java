@@ -53,4 +53,12 @@ public abstract class Json {
             throw new RuntimeException(e);
         }
     }
+
+    public static <T> T fromString(String json, Class<T> clazz) {
+        try {
+            return MAPPER.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
