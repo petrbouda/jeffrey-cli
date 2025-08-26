@@ -2,7 +2,7 @@ package pbouda.jeffrey.init.model;
 
 import java.util.Map;
 
-public record ProjectCreatedEvent(
+public record RemoteProject(
         String projectId,
         String projectName,
         String projectLabel,

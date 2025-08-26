@@ -1,8 +1,8 @@
 package pbouda.jeffrey.init;
 
-import pbouda.jeffrey.init.model.ProjectCreatedEvent;
+import pbouda.jeffrey.init.model.RemoteProject;
 import pbouda.jeffrey.init.model.RepositoryType;
-import pbouda.jeffrey.init.model.SessionCreatedEvent;
+import pbouda.jeffrey.init.model.RemoteSession;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -32,7 +32,7 @@ public class FileSystemRepository {
             Map<String, String> attributes,
             Path projectPath) {
         try {
-            ProjectCreatedEvent projectEvent = new ProjectCreatedEvent(
+            RemoteProject project = new RemoteProject(
                     projectId,
                     projectName,
                     projectLabel,
@@ -42,7 +42,7 @@ public class FileSystemRepository {
                     attributes);
 
             Path projectInfoFile = projectPath.resolve(PROJECT_INFO_FILENAME);
-            Files.writeString(projectInfoFile, Json.toString(projectEvent));
+            Files.writeString(projectInfoFile, Json.toString(project));
         } catch (IOException e) {
             throw new RuntimeException("Failed to write project info for project: " + projectId, e);
         }
@@ -56,7 +56,7 @@ public class FileSystemRepository {
             Path workspacesPath,
             Path sessionPath) {
         try {
-            SessionCreatedEvent sessionEvent = new SessionCreatedEvent(
+            RemoteSession session = new RemoteSession(
                     sessionId,
                     projectId,
                     workspaceId,
@@ -65,13 +65,13 @@ public class FileSystemRepository {
                     workspacesPath != null ? workspacesPath.toString() : null);
 
             Path sessionInfoFile = sessionPath.resolve(SESSION_INFO_FILENAME);
-            Files.writeString(sessionInfoFile, Json.toString(sessionEvent));
+            Files.writeString(sessionInfoFile, Json.toString(session));
         } catch (IOException e) {
             throw new RuntimeException("Failed to write session info for session: " + sessionId + " in project: " + projectId, e);
         }
     }
 
-    public Optional<ProjectCreatedEvent> findProject(String projectName, Path workspacePath) {
+    public Optional<RemoteProject> findProject(String projectName, Path workspacePath) {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(workspacePath)) {
             for (Path projectDir : stream) {
                 if (Files.isDirectory(projectDir)) {
@@ -79,9 +79,9 @@ public class FileSystemRepository {
                     if (Files.exists(projectInfoFile)) {
                         try {
                             String jsonContent = Files.readString(projectInfoFile);
-                            ProjectCreatedEvent projectEvent = Json.fromString(jsonContent, ProjectCreatedEvent.class);
-                            if (projectName.equals(projectEvent.projectName())) {
-                                return Optional.of(projectEvent);
+                            RemoteProject project = Json.fromString(jsonContent, RemoteProject.class);
+                            if (projectName.equals(project.projectName())) {
+                                return Optional.of(project);
                             }
                         } catch (Exception e) {
                             throw new RuntimeException("Failed to read project info from: " + projectInfoFile + ", error: " + e.getMessage());

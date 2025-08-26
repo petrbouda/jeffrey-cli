@@ -2,7 +2,7 @@ package pbouda.jeffrey.init.command;
 
 import pbouda.jeffrey.init.FileSystemRepository;
 import pbouda.jeffrey.init.IDGenerator;
-import pbouda.jeffrey.init.model.ProjectCreatedEvent;
+import pbouda.jeffrey.init.model.RemoteProject;
 import pbouda.jeffrey.init.model.RepositoryType;
 import pbouda.jeffrey.init.model.RepositoryTypeConverter;
 import picocli.CommandLine.Command;
@@ -90,14 +90,14 @@ public class InitCommand implements Runnable {
             FileSystemRepository repository = new FileSystemRepository(CLOCK);
 
             // Find existing project by name
-            Optional<ProjectCreatedEvent> existingProject = repository.findProject(projectName, workspacePath);
+            Optional<RemoteProject> existingProject = repository.findProject(projectName, workspacePath);
 
             String projectId;
             Path projectPath;
 
             if (existingProject.isPresent()) {
                 // Use existing project
-                ProjectCreatedEvent project = existingProject.get();
+                RemoteProject project = existingProject.get();
                 projectId = project.projectId();
 
                 // Find the project directory by iterating through workspace directories

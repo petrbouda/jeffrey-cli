@@ -1,6 +1,6 @@
 package pbouda.jeffrey.init.model;
 
-public record SessionCreatedEvent(
+public record RemoteSession(
         String sessionId,
         String projectId,
         String workspaceId,
