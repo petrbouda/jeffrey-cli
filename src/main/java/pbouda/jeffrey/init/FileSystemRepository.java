@@ -1,11 +1,10 @@
 package pbouda.jeffrey.init;
 
 import pbouda.jeffrey.init.model.RemoteProject;
-import pbouda.jeffrey.init.model.RepositoryType;
 import pbouda.jeffrey.init.model.RemoteSession;
+import pbouda.jeffrey.init.model.RepositoryType;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -71,28 +70,16 @@ public class FileSystemRepository {
         }
     }
 
-    public Optional<RemoteProject> findProject(String projectName, Path workspacePath) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(workspacePath)) {
-            for (Path projectDir : stream) {
-                if (Files.isDirectory(projectDir)) {
-                    Path projectInfoFile = projectDir.resolve(PROJECT_INFO_FILENAME);
-                    if (Files.exists(projectInfoFile)) {
-                        try {
-                            String jsonContent = Files.readString(projectInfoFile);
-                            RemoteProject project = Json.fromString(jsonContent, RemoteProject.class);
-                            if (projectName.equals(project.projectName())) {
-                                return Optional.of(project);
-                            }
-                        } catch (Exception e) {
-                            throw new RuntimeException("Failed to read project info from: " + projectInfoFile + ", error: " + e.getMessage());
-                        }
-                    }
-                }
+    public Optional<RemoteProject> findProject(Path projectPath) {
+        Path projectInfoFile = projectPath.resolve(PROJECT_INFO_FILENAME);
+        if (Files.exists(projectInfoFile)) {
+            try {
+                String jsonContent = Files.readString(projectInfoFile);
+                return Optional.of(Json.fromString(jsonContent, RemoteProject.class));
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to read project info from: " + projectInfoFile + ", error: " + e.getMessage());
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read workspace directory: " + workspacePath + ", error: " + e.getMessage());
         }
         return Optional.empty();
     }
-
 }

@@ -89,28 +89,15 @@ public class InitCommand implements Runnable {
             // Initialize filesystem repository for managing project/session data
             FileSystemRepository repository = new FileSystemRepository(CLOCK);
 
-            // Find existing project by name
-            Optional<RemoteProject> existingProject = repository.findProject(projectName, workspacePath);
-
             String projectId;
-            Path projectPath;
+            Path projectPath = workspacePath.resolve(projectName);
 
-            if (existingProject.isPresent()) {
-                // Use existing project
-                RemoteProject project = existingProject.get();
-                projectId = project.projectId();
-
-                // Find the project directory by iterating through workspace directories
-                projectPath = workspacePath.resolve(projectId);
+            Optional<RemoteProject> projectOpt = repository.findProject(projectPath);
+            if (projectOpt.isPresent()) {
+                projectId = projectOpt.get().projectId();
             } else {
                 // Create new project
                 projectId = IDGenerator.generate();
-                projectPath = workspacePath.resolve(projectId);
-
-                if (Files.exists(projectPath) && !Files.isDirectory(projectPath)) {
-                    System.err.println("[ERROR] Project path already exists and is not a directory: " + projectPath);
-                    System.exit(1);
-                }
 
                 createDirectories(projectPath);
                 repository.addProject(
