@@ -2,9 +2,8 @@ package pbouda.jeffrey.init.command;
 
 import pbouda.jeffrey.init.FileSystemRepository;
 import pbouda.jeffrey.init.IDGenerator;
-import pbouda.jeffrey.init.model.RemoteProject;
-import pbouda.jeffrey.init.model.RepositoryType;
-import pbouda.jeffrey.init.model.RepositoryTypeConverter;
+import pbouda.jeffrey.init.ProfilerSettingsResolver;
+import pbouda.jeffrey.init.model.*;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -29,18 +28,20 @@ public class InitCommand implements Runnable {
     private static final String DEFAULT_FILE_TEMPLATE = "profile-%t.jfr";
     private static final String ENV_FILE_NAME = ".env";
     private static final String WORKSPACES_DIR_NAME = "workspaces";
-    private static final String PROJECT_INFO_FILENAME = ".project-info.json";
     private static final String JEFFREY_HOME_PROP = "JEFFREY_HOME";
     private static final String JEFFREY_WORKSPACES_PROP = "JEFFREY_WORKSPACES";
     private static final String JEFFREY_WORKSPACE_PROP = "JEFFREY_CURRENT_WORKSPACE";
     private static final String JEFFREY_SESSION_PROP = "JEFFREY_CURRENT_SESSION";
     private static final String JEFFREY_PROJECT_PROP = "JEFFREY_CURRENT_PROJECT";
     private static final String JEFFREY_FILE_PATTERN_PROP = "JEFFREY_FILE_PATTERN";
+    private static final String JEFFREY_PROFILER_CONFIG_PROP = "JEFFREY_PROFILER_CONFIG";
+
+    private static final ProfilerSettingsResolver PROFILER_SETTINGS_RESOLVER = new ProfilerSettingsResolver();
 
     @Option(names = {"--silent"}, description = "Suppress output. Only create the variable without printing the output for sourcing.")
     private boolean silent = false;
 
-    @Option(names = {"--jeffrey-home"}, description = "Jeffrey HOME directory path. Automatically creates 'workspaces' directory in Jeffrey home (Otherwise, --workspaces must be provided).")
+    @Option(names = {"--jeffrey-home"}, description = "Jeffrey HOME directory path. Automatically creates 'workspaces' directory in Jeffrey home (Otherwise, --workspaces-dir must be provided).")
     private String jeffreyHomePath;
 
     @Option(names = {"--workspaces-dir"}, description = "Workspaces directory path. It's taken as a directory for storing projects' sessions data (Otherwise, --jeffrey-home must be provided).")
@@ -58,7 +59,16 @@ public class InitCommand implements Runnable {
     @Option(names = {"--attribute"}, description = "Key-value pair attributes delimited by slash ('/') to be added to the project. Can be specified multiple times.")
     private String[] attributes;
 
-    @Option(names = {"--repository-type"}, description = "Type of repository for the project (ASPROF or JDK)", required = true, converter = RepositoryTypeConverter.class)
+    @Option(names = {"--profiler-mode"}, description = "Mode of providing path and configuration of profiler", defaultValue = "DIRECT", converter = ProfilerModeConverter.class)
+    private ProfilerMode profilerMode;
+
+    @Option(names = {"--profiler-custom-path"}, description = "Custom path to the profiler agent (used only with PROFILER_MODE=CUSTOM_PATH)")
+    private String profilerCustomPath;
+
+    @Option(names = {"--profiler-custom-config"}, description = "Custom profiler configuration (used only with PROFILER_MODE=CUSTOM_CONFIG)")
+    private String profilerCustomConfig;
+
+    @Option(names = {"--repository-type"}, description = "Type of repository for the project (ASPROF or JDK)", defaultValue = "ASPROF", converter = RepositoryTypeConverter.class)
     private RepositoryType repositoryType;
 
     @Override
@@ -108,6 +118,14 @@ public class InitCommand implements Runnable {
             String sessionId = IDGenerator.generate();
             Path newSessionPath = createDirectories(projectPath.resolve(sessionId));
 
+            String profilerSettings = PROFILER_SETTINGS_RESOLVER.resolve(
+                    profilerMode,
+                    profilerCustomPath,
+                    profilerCustomConfig,
+                    workspacePath,
+                    projectName,
+                    newSessionPath);
+
             // Add session
             repository.addSession(
                     sessionId,
@@ -115,7 +133,8 @@ public class InitCommand implements Runnable {
                     workspaceId,
                     workspacePath.relativize(newSessionPath),
                     useJeffreyHome ? null : workspacesPath,
-                    newSessionPath);
+                    newSessionPath,
+                    profilerSettings);
 
             String variables = variables(
                     jeffreyHome,
@@ -123,6 +142,7 @@ public class InitCommand implements Runnable {
                     workspacePath,
                     projectPath,
                     newSessionPath,
+                    profilerSettings,
                     useJeffreyHome);
 
             Path envFile = createEnvFile(projectPath, variables);
@@ -171,6 +191,7 @@ public class InitCommand implements Runnable {
             Path workspacePath,
             Path projectPath,
             Path sessionPath,
+            String profilerSettings,
             boolean useJeffreyHome) {
 
         String output = "";
@@ -181,15 +202,18 @@ public class InitCommand implements Runnable {
         output += var(JEFFREY_WORKSPACE_PROP, workspacePath);
         output += var(JEFFREY_PROJECT_PROP, projectPath);
         output += var(JEFFREY_SESSION_PROP, sessionPath);
-        output += var(JEFFREY_FILE_PATTERN_PROP, sessionPath.resolve(DEFAULT_FILE_TEMPLATE), false);
+        output += var(JEFFREY_FILE_PATTERN_PROP, sessionPath.resolve(DEFAULT_FILE_TEMPLATE));
+        if (profilerSettings != null && !profilerSettings.isEmpty()) {
+            output += var(JEFFREY_PROFILER_CONFIG_PROP, profilerSettings, false);
+        }
         return output;
     }
 
     private static String var(String name, Path value) {
-        return var(name, value, true);
+        return var(name, value.toString(), true);
     }
 
-    private static String var(String name, Path value, boolean addNewLine) {
+    private static String var(String name, String value, boolean addNewLine) {
         return "export " + name + "=" + value + (addNewLine ? "\n" : "");
     }
 

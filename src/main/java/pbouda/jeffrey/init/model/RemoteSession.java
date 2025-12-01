@@ -6,5 +6,6 @@ public record RemoteSession(
         String workspaceId,
         long createdAt,
         String relativePath,
-        String workspacesPath) {
+        String workspacesPath,
+        String profilerSettings) {
 }

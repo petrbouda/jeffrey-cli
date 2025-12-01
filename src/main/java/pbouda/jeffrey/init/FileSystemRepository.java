@@ -53,7 +53,8 @@ public class FileSystemRepository {
             String workspaceId,
             Path sessionRelativePath,
             Path workspacesPath,
-            Path sessionPath) {
+            Path sessionPath,
+            String profilerSettings) {
         try {
             RemoteSession session = new RemoteSession(
                     sessionId,
@@ -61,7 +62,8 @@ public class FileSystemRepository {
                     workspaceId,
                     clock.instant().toEpochMilli(),
                     sessionRelativePath.toString(),
-                    workspacesPath != null ? workspacesPath.toString() : null);
+                    workspacesPath != null ? workspacesPath.toString() : null,
+                    profilerSettings);
 
             Path sessionInfoFile = sessionPath.resolve(SESSION_INFO_FILENAME);
             Files.writeString(sessionInfoFile, Json.toString(session));
