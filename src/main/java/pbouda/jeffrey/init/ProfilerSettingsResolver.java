@@ -60,15 +60,19 @@ public class ProfilerSettingsResolver {
     }
 
     private static String resolveJeffreyProfilerConfig(Path workspacePath, String projectName) {
-        Path settingsDir = workspacePath.resolve(WORKSPACE_SETTINGS_DIR);
-        List<Path> settingsFiles = getSettingsFiles(settingsDir);
-        if (!settingsFiles.isEmpty()) {
-            RemoteWorkspaceSettings settings = readSettings(settingsFiles.getFirst());
-            ProfilerSettings profilerSettings = settings.profiler();
-            return profilerSettings.projectSettings()
-                    .getOrDefault(projectName, profilerSettings.defaultSettings());
-        } else {
-            throw new RuntimeException("No profiler settings files found in workspace: " + workspacePath);
+        try {
+            Path settingsDir = Files.createDirectories(workspacePath.resolve(WORKSPACE_SETTINGS_DIR));
+            List<Path> settingsFiles = getSettingsFiles(settingsDir);
+            if (!settingsFiles.isEmpty()) {
+                RemoteWorkspaceSettings settings = readSettings(settingsFiles.getFirst());
+                ProfilerSettings profilerSettings = settings.profiler();
+                return profilerSettings.projectSettings()
+                        .getOrDefault(projectName, profilerSettings.defaultSettings());
+            } else {
+                throw new RuntimeException("No profiler settings files found in workspace: " + workspacePath);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
