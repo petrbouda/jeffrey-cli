@@ -1,5 +1,6 @@
 package pbouda.jeffrey.init.command;
 
+import pbouda.jeffrey.init.DetectionFileResolver;
 import pbouda.jeffrey.init.FileSystemRepository;
 import pbouda.jeffrey.init.IDGenerator;
 import pbouda.jeffrey.init.ProfilerSettingsResolver;
@@ -38,6 +39,8 @@ public class InitCommand implements Runnable {
 
     private static final ProfilerSettingsResolver PROFILER_SETTINGS_RESOLVER = new ProfilerSettingsResolver();
 
+    private static final DetectionFileResolver DETECTION_FILE_RESOLVER = new DetectionFileResolver();
+
     @Option(names = {"--silent"}, description = "Suppress output. Only create the variable without printing the output for sourcing.")
     private boolean silent = false;
 
@@ -59,17 +62,17 @@ public class InitCommand implements Runnable {
     @Option(names = {"--attribute"}, description = "Key-value pair attributes delimited by slash ('/') to be added to the project. Can be specified multiple times.")
     private String[] attributes;
 
-    @Option(names = {"--profiler-mode"}, description = "Mode of providing path and configuration of profiler", defaultValue = "DIRECT", converter = ProfilerModeConverter.class)
-    private ProfilerMode profilerMode;
+    @Option(names = {"--profiler-path"}, description = "Custom path to the profiler agent")
+    private String profilerPath;
 
-    @Option(names = {"--profiler-custom-path"}, description = "Custom path to the profiler agent (used only with PROFILER_MODE=CUSTOM_PATH)")
-    private String profilerCustomPath;
-
-    @Option(names = {"--profiler-custom-config"}, description = "Custom profiler configuration (used only with PROFILER_MODE=CUSTOM_CONFIG)")
-    private String profilerCustomConfig;
+    @Option(names = {"--profiler-config"}, description = "Custom profiler configuration")
+    private String profilerConfig;
 
     @Option(names = {"--repository-type"}, description = "Type of repository for the project (ASPROF or JDK)", defaultValue = "ASPROF", converter = RepositoryTypeConverter.class)
     private RepositoryType repositoryType;
+
+    @Option(names = {"--enable-perfcounters-detection"}, description = "Enable PerfCounters as finished detection file", defaultValue = "false")
+    private boolean enablePerfCountersDetection;
 
     @Override
     public void run() {
@@ -118,13 +121,15 @@ public class InitCommand implements Runnable {
             String sessionId = IDGenerator.generate();
             Path newSessionPath = createDirectories(projectPath.resolve(sessionId));
 
+            String fileDetection = DETECTION_FILE_RESOLVER.resolve(enablePerfCountersDetection, newSessionPath);
+
             String profilerSettings = PROFILER_SETTINGS_RESOLVER.resolve(
-                    profilerMode,
-                    profilerCustomPath,
-                    profilerCustomConfig,
+                    profilerPath,
+                    profilerConfig,
                     workspacePath,
                     projectName,
-                    newSessionPath);
+                    newSessionPath,
+                    fileDetection);
 
             // Add session
             repository.addSession(
@@ -204,7 +209,7 @@ public class InitCommand implements Runnable {
         output += var(JEFFREY_SESSION_PROP, sessionPath);
         output += var(JEFFREY_FILE_PATTERN_PROP, sessionPath.resolve(DEFAULT_FILE_TEMPLATE));
         if (profilerSettings != null && !profilerSettings.isEmpty()) {
-            output += var(JEFFREY_PROFILER_CONFIG_PROP, profilerSettings, false);
+            output += var(JEFFREY_PROFILER_CONFIG_PROP, wrapQuotes(profilerSettings), false);
         }
         return output;
     }
@@ -240,5 +245,9 @@ public class InitCommand implements Runnable {
             }
         }
         return attributes;
+    }
+
+    private static String wrapQuotes(String value) {
+        return "'" + value + "'";
     }
 }

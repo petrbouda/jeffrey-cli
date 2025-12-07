@@ -1,6 +1,5 @@
 package pbouda.jeffrey.init;
 
-import pbouda.jeffrey.init.model.ProfilerMode;
 import pbouda.jeffrey.init.model.ProfilerSettings;
 import pbouda.jeffrey.init.model.RemoteWorkspaceSettings;
 
@@ -16,11 +15,7 @@ import java.util.List;
 public class ProfilerSettingsResolver {
 
     private static final String WORKSPACE_SETTINGS_PREFIX = "settings-";
-    private static final String WORKSPACE_SETTINGS_FILE_PATTERN = WORKSPACE_SETTINGS_PREFIX + "<<timestamp>>.json";
     private static final String WORKSPACE_SETTINGS_DIR = ".settings";
-
-    private static final String JEFFREY_PROFILER_PATH_PLACEHOLDER = "<<JEFFREY_PROFILER_PATH>>";
-    private static final String JEFFREY_JEFFREY_CURRENT_SESSION = "<<JEFFREY_CURRENT_SESSION>>";
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HHmmssSSSSSS").withZone(ZoneOffset.UTC);
@@ -33,20 +28,22 @@ public class ProfilerSettingsResolver {
             }).reversed();
 
     public String resolve(
-            ProfilerMode profilerMode,
-            String profilerCustomPath,
-            String profilerCustomConfig,
+            String profilerPath,
+            String profilerConfig,
             Path workspacePath,
             String projectName,
-            Path currentSessionPath) {
+            Path currentSessionPath,
+            String fileDetection) {
 
-        String config = switch (profilerMode) {
-            case DIRECT -> null;
-            case CUSTOM_PATH -> resolveJeffreyProfilerConfig(workspacePath, projectName);
-            case CUSTOM_CONFIG -> profilerCustomConfig;
-        };
+        String config;
+        // Directly provided ProfilerConfig has priority over workspace settings
+        if (profilerConfig != null && !profilerConfig.isBlank()) {
+            config = profilerConfig;
+        } else {
+            config = resolveJeffreyProfilerConfig(workspacePath, projectName);
+        }
 
-        return replacePlaceholders(config, profilerCustomPath, currentSessionPath);
+        return replacePlaceholders(config, profilerPath, currentSessionPath) + " " + fileDetection;
     }
 
     private static String replacePlaceholders(String config, String profilerPath, Path sessionPath) {
@@ -55,8 +52,8 @@ public class ProfilerSettingsResolver {
         }
 
         return config
-                .replace(JEFFREY_PROFILER_PATH_PLACEHOLDER, profilerPath == null ? "" : profilerPath)
-                .replace(JEFFREY_JEFFREY_CURRENT_SESSION, sessionPath.toString());
+                .replace(Replacements.PROFILER_PATH, profilerPath == null ? "" : profilerPath)
+                .replace(Replacements.CURRENT_SESSION, sessionPath.toString());
     }
 
     private static String resolveJeffreyProfilerConfig(Path workspacePath, String projectName) {
