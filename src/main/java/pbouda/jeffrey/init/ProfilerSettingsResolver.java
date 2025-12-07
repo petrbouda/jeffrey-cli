@@ -55,7 +55,7 @@ public class ProfilerSettingsResolver {
         }
 
         return config
-                .replace(JEFFREY_PROFILER_PATH_PLACEHOLDER, profilerPath)
+                .replace(JEFFREY_PROFILER_PATH_PLACEHOLDER, profilerPath == null ? "" : profilerPath)
                 .replace(JEFFREY_JEFFREY_CURRENT_SESSION, sessionPath.toString());
     }
 
