@@ -1,10 +1,12 @@
 package pbouda.jeffrey.init.command;
 
-import pbouda.jeffrey.init.DetectionFileResolver;
+import pbouda.jeffrey.init.FeatureBuilder;
 import pbouda.jeffrey.init.FileSystemRepository;
 import pbouda.jeffrey.init.IDGenerator;
 import pbouda.jeffrey.init.ProfilerSettingsResolver;
-import pbouda.jeffrey.init.model.*;
+import pbouda.jeffrey.init.model.RemoteProject;
+import pbouda.jeffrey.init.model.RepositoryType;
+import pbouda.jeffrey.init.model.RepositoryTypeConverter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -39,8 +41,6 @@ public class InitCommand implements Runnable {
 
     private static final ProfilerSettingsResolver PROFILER_SETTINGS_RESOLVER = new ProfilerSettingsResolver();
 
-    private static final DetectionFileResolver DETECTION_FILE_RESOLVER = new DetectionFileResolver();
-
     @Option(names = {"--silent"}, description = "Suppress output. Only create the variable without printing the output for sourcing.")
     private boolean silent = false;
 
@@ -71,8 +71,11 @@ public class InitCommand implements Runnable {
     @Option(names = {"--repository-type"}, description = "Type of repository for the project (ASPROF or JDK)", defaultValue = "ASPROF", converter = RepositoryTypeConverter.class)
     private RepositoryType repositoryType;
 
-    @Option(names = {"--enable-perfcounters-detection"}, description = "Enable PerfCounters as finished detection file", defaultValue = "false")
-    private boolean enablePerfCountersDetection;
+    @Option(names = {"--enable-perf-counters"}, description = "Enable PerfCounters (can be used to detect finished session)", defaultValue = "false")
+    private boolean enablePerfCounters;
+
+    @Option(names = {"--enable-heap-dump"}, description = "Enable HeapDump", defaultValue = "false")
+    private boolean enableHeapDump;
 
     @Override
     public void run() {
@@ -121,7 +124,10 @@ public class InitCommand implements Runnable {
             String sessionId = IDGenerator.generate();
             Path newSessionPath = createDirectories(projectPath.resolve(sessionId));
 
-            String fileDetection = DETECTION_FILE_RESOLVER.resolve(enablePerfCountersDetection, newSessionPath);
+            String features = new FeatureBuilder()
+                    .setHeapDumpEnabled(enableHeapDump)
+                    .setPerfCountersEnabled(enablePerfCounters)
+                    .build(newSessionPath);
 
             String profilerSettings = PROFILER_SETTINGS_RESOLVER.resolve(
                     profilerPath,
@@ -129,7 +135,7 @@ public class InitCommand implements Runnable {
                     workspacePath,
                     projectName,
                     newSessionPath,
-                    fileDetection);
+                    features);
 
             // Add session
             repository.addSession(

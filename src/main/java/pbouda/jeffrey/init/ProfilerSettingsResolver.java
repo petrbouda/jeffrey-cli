@@ -33,7 +33,7 @@ public class ProfilerSettingsResolver {
             Path workspacePath,
             String projectName,
             Path currentSessionPath,
-            String fileDetection) {
+            String features) {
 
         String config;
         // Directly provided ProfilerConfig has priority over workspace settings
@@ -43,7 +43,7 @@ public class ProfilerSettingsResolver {
             config = resolveJeffreyProfilerConfig(workspacePath, projectName);
         }
 
-        return replacePlaceholders(config, profilerPath, currentSessionPath) + " " + fileDetection;
+        return replacePlaceholders(config, profilerPath, currentSessionPath) + " " + features;
     }
 
     private static String replacePlaceholders(String config, String profilerPath, Path sessionPath) {
